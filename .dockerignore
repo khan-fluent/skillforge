@@ -1,0 +1,10 @@
+node_modules
+app/client/node_modules
+app/client/dist
+app/server/node_modules
+.env
+.env.*
+*.log
+.git
+.gitignore
+terraform/

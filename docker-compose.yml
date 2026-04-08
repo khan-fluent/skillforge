@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: skillforge
+      POSTGRES_USER: skillforge
+      POSTGRES_PASSWORD: skillforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - skillforge_data:/var/lib/postgresql/data
+
+  server:
+    build: .
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: skillforge
+      DB_USERNAME: skillforge
+      DB_PASSWORD: skillforge
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    depends_on:
+      - db
+
+volumes:
+  skillforge_data:

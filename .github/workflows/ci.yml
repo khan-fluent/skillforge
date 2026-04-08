@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+
+jobs:
+  ci:
+    uses: khan-fluent/workflows/.github/workflows/node-ci.yml@v1
+    with:
+      docker_image_tag: skillforge-test

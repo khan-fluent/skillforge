@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "Dockerfile"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: khan-fluent/workflows/.github/workflows/ecs-deploy.yml@v1
+    with:
+      ecr_repository: skillforge
+      ecs_cluster: khan-fluent
+      ecs_service: skillforge
+      dockerfile_context: .
+    secrets: inherit
