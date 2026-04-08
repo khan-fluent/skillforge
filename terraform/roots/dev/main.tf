@@ -89,7 +89,7 @@ module "ecs_service" {
   ecr_repository_url = module.ecr.repository_url
   container_port     = 3003
   log_retention_days = 7
-  container_memory   = 256
+  container_memory   = 160
 
   environment = [
     { name = "NODE_ENV", value = "production" },
