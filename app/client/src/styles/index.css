@@ -6,16 +6,18 @@
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  /* Paper + ink */
-  --paper:        #faf7f2;
-  --paper-warm:   #f4efe6;
-  --paper-card:   #ffffff;
-  --ink:          #1c1b1a;
-  --ink-soft:     #4a4845;
-  --ink-mute:     #8a8580;
-  --ink-faint:    #c8c2b8;
-  --line:         #e8e2d6;
-  --line-strong:  #d8d1c1;
+  /* Paper + ink — pulled cooler and a notch darker. Still light, still warm
+     enough to feel like paper, but with a slight grey-blue shift so the
+     surface doesn't compete with our other (truly warm cream) apps. */
+  --paper:        #ebe9e3;
+  --paper-warm:   #dedcd4;
+  --paper-card:   #f4f2ec;
+  --ink:          #14151b;
+  --ink-soft:     #3e3f47;
+  --ink-mute:     #7a7a82;
+  --ink-faint:    #b8b7bd;
+  --line:         #d8d5cb;
+  --line-strong:  #c4c1b6;
 
   /* Single accent — Quin's restrained electric blue */
   --accent:       #4d65ff;

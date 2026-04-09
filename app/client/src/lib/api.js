@@ -52,6 +52,7 @@ export const api = {
   gaps:           () => request("/gaps"),
   certifications: () => request("/certifications"),
   createCert:     (data) => request("/certifications", { method: "POST", body: JSON.stringify(data) }),
+  deleteCert:     (id) => request(`/certifications/${id}`, { method: "DELETE" }),
   chat:           (messages) => request("/chat", { method: "POST", body: JSON.stringify({ messages }) }),
 };
 
