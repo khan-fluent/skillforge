@@ -9,3 +9,9 @@ variable "anthropic_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "jwt_secret" {
+  description = "Secret key for signing JWT tokens"
+  type        = string
+  sensitive   = true
+}

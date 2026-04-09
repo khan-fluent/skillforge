@@ -66,6 +66,12 @@ resource "aws_ssm_parameter" "anthropic_api_key" {
   value = var.anthropic_api_key
 }
 
+resource "aws_ssm_parameter" "jwt_secret" {
+  name  = "/skillforge/jwt-secret"
+  type  = "SecureString"
+  value = var.jwt_secret
+}
+
 ################################################################################
 # ECR
 ################################################################################
@@ -109,6 +115,10 @@ module "ecs_service" {
       name      = "ANTHROPIC_API_KEY"
       valueFrom = aws_ssm_parameter.anthropic_api_key.arn
     },
+    {
+      name      = "JWT_SECRET"
+      valueFrom = aws_ssm_parameter.jwt_secret.arn
+    },
   ]
 
   execution_role_secretsmanager_arns = [
@@ -117,5 +127,6 @@ module "ecs_service" {
 
   execution_role_ssm_parameter_arns = [
     aws_ssm_parameter.anthropic_api_key.arn,
+    aws_ssm_parameter.jwt_secret.arn,
   ]
 }

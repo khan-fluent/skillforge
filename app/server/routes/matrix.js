@@ -1,16 +1,21 @@
 import { Router } from "express";
-import pool from "../db/index.js";
+import { query } from "../db/index.js";
+import requireAuth from "../middleware/auth.js";
 
 const router = Router();
 
-// Returns a structure friendly for heatmap rendering:
-// { people: [...], skills: [...], cells: { "personId:skillId": level } }
-router.get("/", async (_req, res, next) => {
+router.get("/", requireAuth, async (req, res, next) => {
   try {
     const [{ rows: people }, { rows: skills }, { rows: profs }] = await Promise.all([
-      pool.query("SELECT id, name, role, team FROM people ORDER BY name"),
-      pool.query("SELECT id, name, domain, deprecated FROM skills ORDER BY domain, name"),
-      pool.query("SELECT person_id, skill_id, level FROM proficiencies"),
+      query("SELECT id, name, role, job_title FROM users WHERE team_id = $1 ORDER BY name", [req.user.team_id]),
+      query("SELECT id, name, domain, deprecated FROM skills WHERE team_id = $1 ORDER BY domain, name", [req.user.team_id]),
+      query(
+        `SELECT pr.user_id AS person_id, pr.skill_id, pr.level
+         FROM proficiencies pr
+         JOIN users u ON u.id = pr.user_id
+         WHERE u.team_id = $1`,
+        [req.user.team_id]
+      ),
     ]);
 
     const cells = {};
