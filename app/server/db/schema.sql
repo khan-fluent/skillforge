@@ -64,6 +64,45 @@ CREATE TABLE IF NOT EXISTS certifications (
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS jira_connections (
+  id           SERIAL PRIMARY KEY,
+  team_id      INTEGER NOT NULL UNIQUE REFERENCES teams(id) ON DELETE CASCADE,
+  base_url     VARCHAR(500) NOT NULL,
+  email        VARCHAR(320) NOT NULL,
+  api_token    VARCHAR(500) NOT NULL,
+  is_mock      BOOLEAN DEFAULT TRUE,
+  last_sync_at TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS jira_filters (
+  id          SERIAL PRIMARY KEY,
+  team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  name        VARCHAR(200) NOT NULL,
+  jql         TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS jira_issues (
+  id              SERIAL PRIMARY KEY,
+  team_id         INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  filter_id       INTEGER REFERENCES jira_filters(id) ON DELETE SET NULL,
+  jira_key        VARCHAR(50) NOT NULL,
+  summary         TEXT,
+  status          VARCHAR(80),
+  assignee_email  VARCHAR(320),
+  assignee_name   VARCHAR(200),
+  story_points    NUMERIC(6,2),
+  sprint          VARCHAR(200),
+  resolved_at     TIMESTAMPTZ,
+  snapshot_date   DATE NOT NULL DEFAULT CURRENT_DATE,
+  raw             JSONB,
+  UNIQUE(team_id, jira_key, snapshot_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_jira_issues_team_date ON jira_issues(team_id, snapshot_date DESC);
+CREATE INDEX IF NOT EXISTS idx_jira_issues_assignee  ON jira_issues(team_id, assignee_email);
+
 CREATE INDEX IF NOT EXISTS idx_users_team           ON users(team_id);
 CREATE INDEX IF NOT EXISTS idx_users_invite_token   ON users(invite_token) WHERE invite_token IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_skills_team          ON skills(team_id);

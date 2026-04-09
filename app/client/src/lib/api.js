@@ -54,6 +54,16 @@ export const api = {
   createCert:     (data) => request("/certifications", { method: "POST", body: JSON.stringify(data) }),
   deleteCert:     (id) => request(`/certifications/${id}`, { method: "DELETE" }),
   chat:           (messages) => request("/chat", { method: "POST", body: JSON.stringify({ messages }) }),
+
+  // jira / tickets
+  jiraSummary:    () => request("/jira/summary"),
+  jiraConnection: () => request("/jira/connection"),
+  setJiraConnection:    (data) => request("/jira/connection", { method: "POST", body: JSON.stringify(data) }),
+  deleteJiraConnection: () => request("/jira/connection", { method: "DELETE" }),
+  jiraFilters:    () => request("/jira/filters"),
+  createJiraFilter: (data) => request("/jira/filters", { method: "POST", body: JSON.stringify(data) }),
+  deleteJiraFilter: (id) => request(`/jira/filters/${id}`, { method: "DELETE" }),
+  jiraSync:       () => request("/jira/sync", { method: "POST" }),
 };
 
 export const auth = {

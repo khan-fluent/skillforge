@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import JiraWidget from "../components/JiraWidget.jsx";
 
 export default function Dashboard() {
   const { user, team } = useAuth();
@@ -71,6 +72,8 @@ export default function Dashboard() {
           <div className="stat-sub">expired or due in 90 days</div>
         </div>
       </div>
+
+      <JiraWidget />
 
       <div className="col-2">
         <div className="card">

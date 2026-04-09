@@ -19,6 +19,7 @@ import certificationsRouter from "./routes/certifications.js";
 import matrixRouter from "./routes/matrix.js";
 import gapsRouter from "./routes/gaps.js";
 import chatRouter from "./routes/chat.js";
+import jiraRouter from "./routes/jira.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -39,6 +40,7 @@ app.use("/api/certifications", certificationsRouter);
 app.use("/api/matrix", matrixRouter);
 app.use("/api/gaps", gapsRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/jira", jiraRouter);
 
 if (process.env.NODE_ENV === "production") {
   const clientDist = join(__dirname, "public");
