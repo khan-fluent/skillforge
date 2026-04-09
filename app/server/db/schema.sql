@@ -89,16 +89,24 @@ CREATE TABLE IF NOT EXISTS jira_issues (
   filter_id       INTEGER REFERENCES jira_filters(id) ON DELETE SET NULL,
   jira_key        VARCHAR(50) NOT NULL,
   summary         TEXT,
+  description     TEXT,
   status          VARCHAR(80),
   assignee_email  VARCHAR(320),
   assignee_name   VARCHAR(200),
   story_points    NUMERIC(6,2),
   sprint          VARCHAR(200),
+  project_key     VARCHAR(50),
+  project_name    VARCHAR(200),
   resolved_at     TIMESTAMPTZ,
   snapshot_date   DATE NOT NULL DEFAULT CURRENT_DATE,
   raw             JSONB,
   UNIQUE(team_id, jira_key, snapshot_date)
 );
+
+-- Upgrades for existing deployments — Postgres ignores IF NOT EXISTS adds.
+ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS description  TEXT;
+ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_key  VARCHAR(50);
+ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_name VARCHAR(200);
 
 CREATE INDEX IF NOT EXISTS idx_jira_issues_team_date ON jira_issues(team_id, snapshot_date DESC);
 CREATE INDEX IF NOT EXISTS idx_jira_issues_assignee  ON jira_issues(team_id, assignee_email);
