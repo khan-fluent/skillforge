@@ -800,6 +800,28 @@ input, textarea, select { font-family: inherit; }
   .gaps-view-toggle { order: 2; }
 }
 
+/* ─────────── Skills table ─────────── */
+
+.skills-toolbar {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.skills-search { max-width: 240px; }
+.skill-expand-row td { background: var(--paper-warm); }
+.skill-expand-content {
+  padding: 10px 4px 4px;
+  font-size: 13px;
+}
+.skill-doc-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: var(--r-md);
+  background: var(--paper-card); border: 1px solid var(--line);
+  font-size: 12px; font-weight: 500;
+  transition: background 0.12s ease;
+}
+.skill-doc-chip:hover { background: var(--accent-soft); }
+.skill-doc-meta { font-size: 10px; color: var(--ink-mute); font-weight: 400; }
+
 /* ─────────── Domains ─────────── */
 
 .domains-topbar {

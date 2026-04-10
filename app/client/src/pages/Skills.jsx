@@ -11,15 +11,15 @@ export default function Skills() {
   const [skills, setSkills] = useState([]);
   const [adding, setAdding] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [domainFilter, setDomainFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [sortCol, setSortCol] = useState("domain");
+  const [sortDir, setSortDir] = useState("asc");
+  const [expandedId, setExpandedId] = useState(null);
+  const isAdmin = user.role === "admin";
 
   const reload = () => api.skills().then(setSkills).catch(() => {});
   useEffect(() => { reload(); }, []);
-
-  const grouped = useMemo(() => {
-    const g = {};
-    for (const s of skills) (g[s.domain] = g[s.domain] || []).push(s);
-    return g;
-  }, [skills]);
 
   const remove = async (id) => {
     if (!confirm("Delete this skill? Proficiencies for it will also be removed.")) return;
@@ -27,41 +27,127 @@ export default function Skills() {
     reload();
   };
 
+  const domains = useMemo(() => {
+    const set = new Set(skills.map((s) => s.domain));
+    return [...set].sort();
+  }, [skills]);
+
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("asc"); }
+  };
+
+  const filtered = useMemo(() => {
+    let list = skills;
+    if (domainFilter !== "all") list = list.filter((s) => s.domain === domainFilter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((s) => s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q));
+    }
+    return [...list].sort((a, b) => {
+      const mul = sortDir === "asc" ? 1 : -1;
+      if (sortCol === "name") return mul * a.name.localeCompare(b.name);
+      if (sortCol === "domain") return mul * a.domain.localeCompare(b.domain) || a.name.localeCompare(b.name);
+      return mul * ((a[sortCol] ?? 0) - (b[sortCol] ?? 0));
+    });
+  }, [skills, domainFilter, search, sortCol, sortDir]);
+
+  const SortHead = ({ col, children }) => (
+    <th onClick={() => toggleSort(col)} style={{ cursor: "pointer", userSelect: "none" }}>
+      {children} {sortCol === col && <span>{sortDir === "asc" ? "\u25B2" : "\u25BC"}</span>}
+    </th>
+  );
+
   return (
     <>
       <div className="page-hd">
         <div>
           <h1>Skills</h1>
-          <p>The skills your team cares about, organized by domain.</p>
+          <p>The skills your team cares about.</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn ghost" onClick={() => setGenerating(true)}>✧ Generate with AI</button>
+          <button className="btn ghost" onClick={() => setGenerating(true)}>Generate with AI</button>
           <button className="btn" onClick={() => setAdding(true)}>Add skill</button>
         </div>
       </div>
 
-      {Object.keys(grouped).length === 0 && (
+      {skills.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: 48, background: "var(--paper-warm)" }}>
           <h3 style={{ textTransform: "none", fontSize: 14 }}>No skills yet</h3>
           <h2 className="serif" style={{ fontSize: 32, margin: "8px 0 16px" }}>Describe your stack and let AI fill it in.</h2>
           <p style={{ color: "var(--ink-soft)", marginBottom: 24 }}>Or add skills manually — whichever you prefer.</p>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <button className="btn" onClick={() => setGenerating(true)}>✧ Generate with AI</button>
+            <button className="btn" onClick={() => setGenerating(true)}>Generate with AI</button>
             <button className="btn ghost" onClick={() => setAdding(true)}>Add manually</button>
           </div>
         </div>
-      )}
-
-      {Object.entries(grouped).map(([domain, items]) => (
-        <div key={domain} style={{ marginBottom: 36 }}>
-          <h3 style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 14 }}>{domain}</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
-            {items.map((s) => (
-              <SkillCard key={s.id} skill={s} isAdmin={user.role === "admin"} onDelete={() => remove(s.id)} />
-            ))}
+      ) : (
+        <>
+          {/* Filters */}
+          <div className="skills-toolbar">
+            <input
+              className="input skills-search"
+              type="text"
+              placeholder="Search skills..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="gaps-view-toggle">
+              <button
+                className={`gaps-view-btn ${domainFilter === "all" ? "active" : ""}`}
+                onClick={() => setDomainFilter("all")}
+              >
+                All ({skills.length})
+              </button>
+              {domains.map((d) => (
+                <button
+                  key={d}
+                  className={`gaps-view-btn ${domainFilter === d ? "active" : ""}`}
+                  onClick={() => setDomainFilter(d)}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+
+          {/* Table */}
+          <div className="gaps-table-wrap">
+            <table className="gaps-table">
+              <thead>
+                <tr>
+                  <SortHead col="name">Name</SortHead>
+                  <SortHead col="domain">Domain</SortHead>
+                  <th>Description</th>
+                  <SortHead col="people_count">People</SortHead>
+                  <SortHead col="proficient_count">Proficient</SortHead>
+                  <SortHead col="avg_level">Avg level</SortHead>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((s) => (
+                  <SkillRow
+                    key={s.id}
+                    skill={s}
+                    isAdmin={isAdmin}
+                    expanded={expandedId === s.id}
+                    onToggle={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                    onDelete={() => remove(s.id)}
+                  />
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: "center", padding: 32, color: "var(--ink-mute)" }}>
+                      No skills match your filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       <Modal open={adding} onClose={() => setAdding(false)} title="Add a skill" lede="Group it under a domain so it shows up nicely in the matrix.">
         <AddSkillForm onClose={() => setAdding(false)} onSaved={() => { setAdding(false); reload(); }} />
@@ -69,6 +155,80 @@ export default function Skills() {
 
       {generating && (
         <GenerateModal onClose={() => setGenerating(false)} onDone={() => { setGenerating(false); reload(); }} />
+      )}
+    </>
+  );
+}
+
+function SkillRow({ skill: s, isAdmin, expanded, onToggle, onDelete }) {
+  const [docs, setDocs] = useState(null);
+
+  const loadDocs = async () => {
+    if (docs !== null) { onToggle(); return; }
+    onToggle();
+    try { setDocs(await api.kbBySkill(s.id)); }
+    catch { setDocs([]); }
+  };
+
+  const levelColor = s.avg_level >= 4 ? "var(--good)" : s.avg_level >= 2.5 ? "var(--warn)" : s.avg_level > 0 ? "var(--bad)" : "var(--ink-mute)";
+
+  return (
+    <>
+      <tr style={{ cursor: "pointer" }} onClick={loadDocs}>
+        <td style={{ fontWeight: 600 }}>{s.name}</td>
+        <td><span className="domain-tag">{s.domain}</span></td>
+        <td style={{ color: "var(--ink-mute)", fontSize: 12, maxWidth: 300 }}>
+          <span style={{ display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {s.description || "\u2014"}
+          </span>
+        </td>
+        <td>{s.people_count}</td>
+        <td>{s.proficient_count}</td>
+        <td>
+          <span style={{ color: levelColor, fontWeight: 600 }}>
+            {s.avg_level > 0 ? s.avg_level.toFixed(1) : "\u2014"}
+          </span>
+        </td>
+        <td style={{ textAlign: "right" }}>
+          {isAdmin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="btn ghost small"
+              style={{ padding: "2px 8px", fontSize: 14, lineHeight: 1, color: "var(--ink-mute)" }}
+              title="Delete skill"
+            >
+              &times;
+            </button>
+          )}
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="skill-expand-row">
+          <td colSpan={7} style={{ padding: "0 12px 12px" }}>
+            <div className="skill-expand-content">
+              {docs === null && <span className="loader"><span /><span /><span /></span>}
+              {docs && docs.length === 0 && (
+                <span style={{ fontSize: 12, color: "var(--ink-mute)" }}>
+                  No knowledge base docs linked. <Link to="/app/kb" style={{ color: "var(--accent)" }}>Go to Knowledge Base</Link> to link one.
+                </span>
+              )}
+              {docs && docs.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {docs.map((d) => (
+                    <Link
+                      key={d.id}
+                      to="/app/kb"
+                      className="skill-doc-chip"
+                    >
+                      {d.title}
+                      <span className="skill-doc-meta">{d.author_name}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
       )}
     </>
   );
@@ -104,83 +264,14 @@ function AddSkillForm({ onClose, onSaved }) {
       </div>
       <div className="actions">
         <button type="button" className="btn ghost small" onClick={onClose} disabled={busy}>Cancel</button>
-        <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving…" : "Add skill"}</button>
+        <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving\u2026" : "Add skill"}</button>
       </div>
     </form>
   );
 }
 
-function SkillCard({ skill: s, isAdmin, onDelete }) {
-  const [expanded, setExpanded] = useState(false);
-  const [docs, setDocs] = useState(null);
-
-  const loadDocs = async () => {
-    if (docs !== null) { setExpanded(!expanded); return; }
-    setExpanded(true);
-    try { setDocs(await api.kbBySkill(s.id)); }
-    catch { setDocs([]); }
-  };
-
-  return (
-    <div className="card" style={{ padding: 22 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 16 }}>{s.name}</div>
-          {s.description && <div style={{ color: "var(--ink-mute)", fontSize: 12, marginTop: 4 }}>{s.description}</div>}
-        </div>
-        {isAdmin && (
-          <button onClick={onDelete} style={{ color: "var(--ink-mute)", fontSize: 16 }} title="Delete">×</button>
-        )}
-      </div>
-      <div style={{ display: "flex", gap: 16, marginTop: 16, fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-        <span>{s.people_count} people</span>
-        <span>{s.proficient_count} proficient</span>
-      </div>
-      <button
-        onClick={loadDocs}
-        style={{ marginTop: 14, fontSize: 12, color: "var(--accent)", display: "flex", alignItems: "center", gap: 4 }}
-      >
-        <span>{expanded ? "▾" : "▸"}</span> Knowledge base docs
-      </button>
-      {expanded && (
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
-          {docs === null && <span className="loader"><span /><span /><span /></span>}
-          {docs && docs.length === 0 && (
-            <div style={{ fontSize: 12, color: "var(--ink-mute)" }}>
-              No docs linked to this skill yet. <Link to="/app/kb" style={{ color: "var(--accent)" }}>Go to Knowledge Base</Link> to link one.
-            </div>
-          )}
-          {docs && docs.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {docs.map((d) => (
-                <Link
-                  key={d.id}
-                  to="/app/kb"
-                  style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "8px 12px", borderRadius: 8,
-                    background: "var(--paper-warm)", border: "1px solid var(--line)",
-                    fontSize: 13, transition: "background 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--accent-soft)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--paper-warm)"}
-                >
-                  <span style={{ fontWeight: 500 }}>{d.title}</span>
-                  <span className="mono" style={{ fontSize: 10, color: "var(--ink-mute)" }}>
-                    {d.author_name} · {new Date(d.updated_at).toLocaleDateString()}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function GenerateModal({ onClose, onDone }) {
-  const [step, setStep] = useState("describe"); // describe → review → importing
+  const [step, setStep] = useState("describe");
   const [description, setDescription] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [selected, setSelected] = useState(new Set());
@@ -234,7 +325,7 @@ function GenerateModal({ onClose, onDone }) {
             <div className="actions">
               <button className="btn ghost small" onClick={onClose} disabled={busy}>Cancel</button>
               <button className="btn small accent" onClick={generate} disabled={busy || description.trim().length < 10}>
-                {busy ? "Generating…" : "✧ Generate"}
+                {busy ? "Generating\u2026" : "Generate"}
               </button>
             </div>
           </>
@@ -290,7 +381,7 @@ function GenerateModal({ onClose, onDone }) {
             <div className="actions" style={{ marginTop: 20 }}>
               <button className="btn ghost small" onClick={() => setStep("describe")} disabled={busy}>Back</button>
               <button className="btn small" onClick={importSkills} disabled={busy || selected.size === 0}>
-                {busy ? "Importing…" : `Import ${selected.size} skills`}
+                {busy ? "Importing\u2026" : `Import ${selected.size} skills`}
               </button>
             </div>
           </>
