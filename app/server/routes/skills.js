@@ -81,7 +81,7 @@ router.post("/generate", requireAuth, async (req, res, next) => {
     const existingNames = existing.map((s) => s.name);
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5-20250514",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 2000,
       system: `You are a skill-taxonomy expert for engineering teams. Given a
 free-text description of a team's tech stack, tools, and practices, generate
