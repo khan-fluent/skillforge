@@ -134,13 +134,18 @@ router.post("/documents", requireAuth, async (req, res, next) => {
 
 router.put("/documents/:id", requireAuth, async (req, res, next) => {
   try {
-    const { title, content, folder_id, skill_ids } = req.body;
-    const existing = await query("SELECT id FROM kb_documents WHERE id = $1 AND team_id = $2", [req.params.id, req.user.team_id]);
+    const { title, content, skill_ids } = req.body;
+    const folderExplicit = "folder_id" in req.body;
+    const existing = await query("SELECT id, folder_id FROM kb_documents WHERE id = $1 AND team_id = $2", [req.params.id, req.user.team_id]);
     if (!existing.rows.length) return res.status(404).json({ error: "not found" });
 
     if (content !== undefined && Buffer.byteLength(content) > MAX_CONTENT_BYTES) {
       return res.status(413).json({ error: `Document too large. Max ${MAX_CONTENT_BYTES / 1000} KB.` });
     }
+    // Only change folder_id if the client explicitly sent it. Otherwise
+    // keep the existing value so edits (title/content/skills) don't
+    // accidentally move docs to unfiled.
+    const newFolderId = folderExplicit ? (req.body.folder_id || null) : existing.rows[0].folder_id;
     const { rows } = await query(
       `UPDATE kb_documents SET
          title = COALESCE($1, title),
@@ -150,7 +155,7 @@ router.put("/documents/:id", requireAuth, async (req, res, next) => {
          updated_at = NOW()
        WHERE id = $5 AND team_id = $6
        RETURNING *`,
-      [title || null, content ?? null, folder_id ?? null, req.user.id, req.params.id, req.user.team_id]
+      [title || null, content ?? null, newFolderId, req.user.id, req.params.id, req.user.team_id]
     );
     if (skill_ids !== undefined) await syncSkills(rows[0].id, skill_ids);
     res.json(rows[0]);
@@ -205,6 +210,24 @@ router.get("/stats", requireAuth, async (req, res, next) => {
       storage_used: Number(usage.rows[0].total),
       storage_limit: MAX_TEAM_BYTES,
     });
+  } catch (e) { next(e); }
+});
+
+// ─────── Docs by skill ───────
+
+router.get("/by-skill/:skillId", requireAuth, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT d.id, d.title, d.folder_id, d.updated_at, LENGTH(d.content) AS content_length,
+              u.name AS author_name
+       FROM kb_documents d
+       JOIN kb_document_skills ds ON ds.document_id = d.id
+       LEFT JOIN users u ON u.id = d.created_by
+       WHERE ds.skill_id = $1 AND d.team_id = $2
+       ORDER BY d.updated_at DESC`,
+      [req.params.skillId, req.user.team_id]
+    );
+    res.json(rows);
   } catch (e) { next(e); }
 });
 

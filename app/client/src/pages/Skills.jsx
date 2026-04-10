@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import Modal from "../components/Modal.jsx";
@@ -56,21 +57,7 @@ export default function Skills() {
           <h3 style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-mute)", marginBottom: 14 }}>{domain}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
             {items.map((s) => (
-              <div key={s.id} className="card" style={{ padding: 22 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 16 }}>{s.name}</div>
-                    {s.description && <div style={{ color: "var(--ink-mute)", fontSize: 12, marginTop: 4 }}>{s.description}</div>}
-                  </div>
-                  {user.role === "admin" && (
-                    <button onClick={() => remove(s.id)} style={{ color: "var(--ink-mute)", fontSize: 16 }} title="Delete">×</button>
-                  )}
-                </div>
-                <div style={{ display: "flex", gap: 16, marginTop: 16, fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  <span>{s.people_count} people</span>
-                  <span>{s.proficient_count} proficient</span>
-                </div>
-              </div>
+              <SkillCard key={s.id} skill={s} isAdmin={user.role === "admin"} onDelete={() => remove(s.id)} />
             ))}
           </div>
         </div>
@@ -120,6 +107,75 @@ function AddSkillForm({ onClose, onSaved }) {
         <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving…" : "Add skill"}</button>
       </div>
     </form>
+  );
+}
+
+function SkillCard({ skill: s, isAdmin, onDelete }) {
+  const [expanded, setExpanded] = useState(false);
+  const [docs, setDocs] = useState(null);
+
+  const loadDocs = async () => {
+    if (docs !== null) { setExpanded(!expanded); return; }
+    setExpanded(true);
+    try { setDocs(await api.kbBySkill(s.id)); }
+    catch { setDocs([]); }
+  };
+
+  return (
+    <div className="card" style={{ padding: 22 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 16 }}>{s.name}</div>
+          {s.description && <div style={{ color: "var(--ink-mute)", fontSize: 12, marginTop: 4 }}>{s.description}</div>}
+        </div>
+        {isAdmin && (
+          <button onClick={onDelete} style={{ color: "var(--ink-mute)", fontSize: 16 }} title="Delete">×</button>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: 16, marginTop: 16, fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        <span>{s.people_count} people</span>
+        <span>{s.proficient_count} proficient</span>
+      </div>
+      <button
+        onClick={loadDocs}
+        style={{ marginTop: 14, fontSize: 12, color: "var(--accent)", display: "flex", alignItems: "center", gap: 4 }}
+      >
+        <span>{expanded ? "▾" : "▸"}</span> Knowledge base docs
+      </button>
+      {expanded && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
+          {docs === null && <span className="loader"><span /><span /><span /></span>}
+          {docs && docs.length === 0 && (
+            <div style={{ fontSize: 12, color: "var(--ink-mute)" }}>
+              No docs linked to this skill yet. <Link to="/app/kb" style={{ color: "var(--accent)" }}>Go to Knowledge Base</Link> to link one.
+            </div>
+          )}
+          {docs && docs.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {docs.map((d) => (
+                <Link
+                  key={d.id}
+                  to="/app/kb"
+                  style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "8px 12px", borderRadius: 8,
+                    background: "var(--paper-warm)", border: "1px solid var(--line)",
+                    fontSize: 13, transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--accent-soft)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "var(--paper-warm)"}
+                >
+                  <span style={{ fontWeight: 500 }}>{d.title}</span>
+                  <span className="mono" style={{ fontSize: 10, color: "var(--ink-mute)" }}>
+                    {d.author_name} · {new Date(d.updated_at).toLocaleDateString()}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

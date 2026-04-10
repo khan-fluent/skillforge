@@ -69,6 +69,7 @@ export const api = {
   deleteKbDoc:     (id) => request(`/kb/documents/${id}`, { method: "DELETE" }),
   kbSearch:        (q) => request(`/kb/search?q=${encodeURIComponent(q)}`),
   kbStats:         () => request("/kb/stats"),
+  kbBySkill:       (skillId) => request(`/kb/by-skill/${skillId}`),
 
   // jira / tickets
   jiraSummary:    () => request("/jira/summary"),
