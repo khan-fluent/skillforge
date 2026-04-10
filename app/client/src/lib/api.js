@@ -45,6 +45,7 @@ export const api = {
   createSkill:    (data) => request("/skills", { method: "POST", body: JSON.stringify(data) }),
   bulkAddSkills:  (skills) => request("/skills/bulk", { method: "POST", body: JSON.stringify({ skills }) }),
   generateSkills: (description) => request("/skills/generate", { method: "POST", body: JSON.stringify({ description }) }),
+  updateSkill:    (id, data) => request(`/skills/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteSkill:    (id) => request(`/skills/${id}`, { method: "DELETE" }),
 
   // proficiencies
@@ -55,6 +56,7 @@ export const api = {
   gaps:           () => request("/gaps"),
   certifications: () => request("/certifications"),
   createCert:     (data) => request("/certifications", { method: "POST", body: JSON.stringify(data) }),
+  updateCert:     (id, data) => request(`/certifications/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteCert:     (id) => request(`/certifications/${id}`, { method: "DELETE" }),
   chat:           (messages) => request("/chat", { method: "POST", body: JSON.stringify({ messages }) }),
 
@@ -75,6 +77,7 @@ export const api = {
   // domains
   domains:           () => request("/domains"),
   createDomain:      (data) => request("/domains", { method: "POST", body: JSON.stringify(data) }),
+  updateDomain:      (id, data) => request(`/domains/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteDomain:      (id) => request(`/domains/${id}`, { method: "DELETE" }),
   setDomainProf:     (data) => request("/domains/proficiencies", { method: "POST", body: JSON.stringify(data) }),
   domainGaps:        () => request("/domains/gaps"),

@@ -12,6 +12,7 @@ export default function Skills() {
   const [skills, setSkills] = useState([]);
   const [matrixData, setMatrixData] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(null); // skill object or null
   const [generating, setGenerating] = useState(false);
   const [domainFilter, setDomainFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -121,6 +122,7 @@ export default function Skills() {
                     matrixData={matrixData}
                     expanded={expandedId === s.id}
                     onToggle={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                    onEdit={() => setEditing(s)}
                     onDelete={() => remove(s.id)}
                     onProficiencyChanged={reload}
                   />
@@ -138,6 +140,10 @@ export default function Skills() {
         <AddSkillForm onClose={() => setAdding(false)} onSaved={() => { setAdding(false); reload(); }} />
       </Modal>
 
+      <Modal open={!!editing} onClose={() => setEditing(null)} title="Edit skill" lede="Update the skill's name, domain, or description.">
+        {editing && <EditSkillForm skill={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
+      </Modal>
+
       {generating && (
         <GenerateModal onClose={() => setGenerating(false)} onDone={() => { setGenerating(false); reload(); }} />
       )}
@@ -145,7 +151,7 @@ export default function Skills() {
   );
 }
 
-function SkillRow({ skill: s, isAdmin, userId, matrixData, expanded, onToggle, onDelete, onProficiencyChanged }) {
+function SkillRow({ skill: s, isAdmin, userId, matrixData, expanded, onToggle, onEdit, onDelete, onProficiencyChanged }) {
   const [docs, setDocs] = useState(null);
 
   const handleToggle = async () => {
@@ -183,11 +189,16 @@ function SkillRow({ skill: s, isAdmin, userId, matrixData, expanded, onToggle, o
             {s.avg_level > 0 ? s.avg_level.toFixed(1) : "\u2014"}
           </span>
         </td>
-        <td style={{ textAlign: "right" }}>
+        <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
           {isAdmin && (
-            <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="btn ghost small" style={{ padding: "2px 8px", fontSize: 14, lineHeight: 1, color: "var(--ink-mute)" }} title="Delete skill"
-            >&times;</button>
+            <>
+              <button onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                className="btn ghost small" style={{ padding: "2px 8px", fontSize: 11, lineHeight: 1, color: "var(--ink-mute)" }} title="Edit skill"
+              >Edit</button>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="btn ghost small" style={{ padding: "2px 8px", fontSize: 14, lineHeight: 1, color: "var(--ink-mute)" }} title="Delete skill"
+              >&times;</button>
+            </>
           )}
         </td>
       </tr>
@@ -198,8 +209,11 @@ function SkillRow({ skill: s, isAdmin, userId, matrixData, expanded, onToggle, o
               {/* Proficiency editing */}
               {people.length > 0 && (
                 <div style={{ marginBottom: docs?.length ? 16 : 0 }}>
-                  <div style={{ fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-                    Proficiency levels
+                  <div className="prof-header">
+                    <span className="prof-header-label">Proficiency levels</span>
+                    <div className="prof-scale-labels">
+                      <span>1 Novice</span><span>2</span><span>3</span><span>4</span><span>5 Expert</span>
+                    </div>
                   </div>
                   {people.map((p) => {
                     const currentLevel = cells[`${p.id}:${s.id}`] || 0;
@@ -207,21 +221,19 @@ function SkillRow({ skill: s, isAdmin, userId, matrixData, expanded, onToggle, o
                     return (
                       <div key={p.id} className="prof-row">
                         <span className="prof-row-name">{p.name}</span>
-                        <div className="prof-dots">
+                        <div className="prof-bar">
                           {[1, 2, 3, 4, 5].map((lv) => (
                             <button
                               key={lv}
-                              className={`prof-dot ${currentLevel >= lv ? `active l${lv}` : ""}`}
+                              className={`prof-seg ${lv <= currentLevel ? "filled" : ""} ${lv === currentLevel ? "edge" : ""}`}
                               onClick={(e) => { e.stopPropagation(); if (canEdit) setLevel(p.id, lv); }}
-                              style={{ cursor: canEdit ? "pointer" : "default", opacity: canEdit ? 1 : 0.6 }}
-                              title={canEdit ? `Set ${p.name} to ${LEVEL_LABELS[lv]}` : `${p.name}: ${currentLevel ? LEVEL_LABELS[currentLevel] : "Not set"}`}
-                            >
-                              {lv}
-                            </button>
+                              style={{ cursor: canEdit ? "pointer" : "default", opacity: canEdit ? 1 : 0.5 }}
+                              title={canEdit ? `Set to ${LEVEL_LABELS[lv]}` : LEVEL_LABELS[lv]}
+                            />
                           ))}
                         </div>
-                        <span style={{ fontSize: 10, color: "var(--ink-mute)", minWidth: 60 }}>
-                          {currentLevel ? LEVEL_LABELS[currentLevel] : ""}
+                        <span className="prof-level-label">
+                          {currentLevel ? LEVEL_LABELS[currentLevel] : "Not set"}
                         </span>
                       </div>
                     );
@@ -290,6 +302,42 @@ function AddSkillForm({ onClose, onSaved }) {
       <div className="actions">
         <button type="button" className="btn ghost small" onClick={onClose} disabled={busy}>Cancel</button>
         <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving\u2026" : "Add skill"}</button>
+      </div>
+    </form>
+  );
+}
+
+function EditSkillForm({ skill, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: skill.name, domain: skill.domain, description: skill.description || "" });
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const change = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr(""); setBusy(true);
+    try { await api.updateSkill(skill.id, form); onSaved(); }
+    catch (e) { setErr(e.message); setBusy(false); }
+  };
+  return (
+    <form onSubmit={submit}>
+      {err && <div style={{ background: "#f5dcd2", color: "var(--bad)", padding: "10px 14px", borderRadius: 10, fontSize: 13, marginBottom: 14 }}>{err}</div>}
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Skill name</label>
+        <input className="input" value={form.name} onChange={change("name")} required />
+      </div>
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Domain</label>
+        <select className="input" value={form.domain} onChange={change("domain")}>
+          {DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+      <div className="field">
+        <label className="label">Description</label>
+        <input className="input" value={form.description} onChange={change("description")} />
+      </div>
+      <div className="actions">
+        <button type="button" className="btn ghost small" onClick={onClose} disabled={busy}>Cancel</button>
+        <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving\u2026" : "Save"}</button>
       </div>
     </form>
   );

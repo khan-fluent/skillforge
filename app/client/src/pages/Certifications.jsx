@@ -15,6 +15,7 @@ export default function Certifications() {
   const [certs, setCerts] = useState([]);
   const [members, setMembers] = useState([]);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   const reload = () => api.certifications().then(setCerts).catch(() => {});
 
@@ -64,9 +65,12 @@ export default function Certifications() {
                 <td style={{ color: "var(--ink-soft)", fontSize: 13 }}>{c.issuer || "—"}</td>
                 <td className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>{c.expires_on || "—"}</td>
                 <td><span className={`pill ${STATUS[c.status].pill}`}>{STATUS[c.status].label}</span></td>
-                <td style={{ paddingRight: 28, textAlign: "right" }}>
+                <td style={{ paddingRight: 28, textAlign: "right", whiteSpace: "nowrap" }}>
                   {canDelete(c) && (
-                    <button onClick={() => remove(c.id)} title="Delete" style={{ color: "var(--ink-mute)", fontSize: 18, padding: "0 6px" }}>×</button>
+                    <>
+                      <button onClick={() => setEditing(c)} style={{ color: "var(--ink-mute)", fontSize: 11, padding: "0 6px" }}>Edit</button>
+                      <button onClick={() => remove(c.id)} title="Delete" style={{ color: "var(--ink-mute)", fontSize: 18, padding: "0 6px" }}>×</button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -78,6 +82,10 @@ export default function Certifications() {
         </table>
       </div>
 
+      <Modal open={!!editing} onClose={() => setEditing(null)} title="Edit certification">
+        {editing && <EditCertForm cert={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
+      </Modal>
+
       <Modal open={adding} onClose={() => setAdding(false)} title="Add certification" lede={user.role === "admin" ? "Track a credential for yourself or anyone on the team." : "Track a credential you've earned."}>
         <AddCertForm
           isAdmin={user.role === "admin"}
@@ -88,6 +96,50 @@ export default function Certifications() {
         />
       </Modal>
     </>
+  );
+}
+
+function EditCertForm({ cert, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    name: cert.name, issuer: cert.issuer || "", issued_on: cert.issued_on || "",
+    expires_on: cert.expires_on || "", credential_url: cert.credential_url || "",
+  });
+  const [busy, setBusy] = useState(false);
+  const change = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true);
+    try { await api.updateCert(cert.id, form); onSaved(); }
+    catch { setBusy(false); }
+  };
+  return (
+    <form onSubmit={submit}>
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Certification name</label>
+        <input className="input" value={form.name} onChange={change("name")} required />
+      </div>
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Issuer</label>
+        <input className="input" value={form.issuer} onChange={change("issuer")} />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="label">Issued on</label>
+          <input className="input" type="date" value={form.issued_on} onChange={change("issued_on")} />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label className="label">Expires on</label>
+          <input className="input" type="date" value={form.expires_on} onChange={change("expires_on")} />
+        </div>
+      </div>
+      <div className="field">
+        <label className="label">Credential URL</label>
+        <input className="input" type="url" value={form.credential_url} onChange={change("credential_url")} />
+      </div>
+      <div className="actions">
+        <button type="button" className="btn ghost small" onClick={onClose}>Cancel</button>
+        <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving\u2026" : "Save"}</button>
+      </div>
+    </form>
   );
 }
 

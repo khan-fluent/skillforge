@@ -124,6 +124,24 @@ Rules:
   }
 });
 
+router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { name, domain, description, deprecated } = req.body;
+    const { rows } = await query(
+      `UPDATE skills SET
+         name = COALESCE($3, name),
+         domain = COALESCE($4, domain),
+         description = COALESCE($5, description),
+         deprecated = COALESCE($6, deprecated)
+       WHERE id = $1 AND team_id = $2
+       RETURNING *`,
+      [req.params.id, req.user.team_id, name, domain, description, deprecated]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Skill not found" });
+    res.json(rows[0]);
+  } catch (e) { next(e); }
+});
+
 router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     await query("DELETE FROM skills WHERE id = $1 AND team_id = $2", [req.params.id, req.user.team_id]);

@@ -7,7 +7,8 @@ export default function People() {
   const { user } = useAuth();
   const [people, setPeople] = useState([]);
   const [adding, setAdding] = useState(false);
-  const [inviteResult, setInviteResult] = useState(null); // { name, link }
+  const [editing, setEditing] = useState(null);
+  const [inviteResult, setInviteResult] = useState(null);
 
   const reload = () => api.members().then(setPeople).catch(() => {});
   useEffect(() => { reload(); }, []);
@@ -24,9 +25,13 @@ export default function People() {
 
       <div className="people-grid">
         {people.map((p) => (
-          <PersonCard key={p.id} person={p} onChanged={reload} onInvited={(link) => setInviteResult({ name: p.name, link })} />
+          <PersonCard key={p.id} person={p} onChanged={reload} onEdit={() => setEditing(p)} onInvited={(link) => setInviteResult({ name: p.name, link })} />
         ))}
       </div>
+
+      <Modal open={!!editing} onClose={() => setEditing(null)} title="Edit member" lede="Update name, job title, or role.">
+        {editing && <EditMemberForm person={editing} isAdmin={user.role === "admin"} isMe={editing.id === user.id} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
+      </Modal>
 
       <Modal open={adding} onClose={() => setAdding(false)} title="Add a teammate" lede="They'll get an invite link to set their password and join.">
         <AddForm onClose={() => setAdding(false)} onCreated={(member) => {
@@ -53,7 +58,7 @@ export default function People() {
   );
 }
 
-function PersonCard({ person, onChanged, onInvited }) {
+function PersonCard({ person, onChanged, onEdit, onInvited }) {
   const { user } = useAuth();
   const isAdmin = user.role === "admin";
   const isMe = user.id === person.id;
@@ -82,13 +87,48 @@ function PersonCard({ person, onChanged, onInvited }) {
         <div>Skills<strong>{person.skill_count}</strong></div>
         <div>Avg level<strong>{person.avg_level.toFixed(1)}</strong></div>
       </div>
-      {isAdmin && !isMe && (
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          {pending && <button className="btn ghost small" onClick={reinvite}>Resend invite</button>}
-          <button className="btn ghost small" onClick={remove} style={{ color: "var(--bad)", borderColor: "rgba(184,72,46,0.3)" }}>Remove</button>
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        {(isAdmin || isMe) && <button className="btn ghost small" onClick={onEdit}>Edit</button>}
+        {isAdmin && !isMe && pending && <button className="btn ghost small" onClick={reinvite}>Resend invite</button>}
+        {isAdmin && !isMe && <button className="btn ghost small" onClick={remove} style={{ color: "var(--bad)", borderColor: "rgba(184,72,46,0.3)" }}>Remove</button>}
+      </div>
+    </div>
+  );
+}
+
+function EditMemberForm({ person, isAdmin, isMe, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: person.name, job_title: person.job_title || "", role: person.role });
+  const [busy, setBusy] = useState(false);
+  const change = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true);
+    try { await api.updateMember(person.id, form); onSaved(); }
+    catch { setBusy(false); }
+  };
+  return (
+    <form onSubmit={submit}>
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Name</label>
+        <input className="input" value={form.name} onChange={change("name")} required />
+      </div>
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Job title</label>
+        <input className="input" value={form.job_title} onChange={change("job_title")} placeholder="Senior Backend Engineer" />
+      </div>
+      {isAdmin && (
+        <div className="field">
+          <label className="label">Role</label>
+          <select className="input" value={form.role} onChange={change("role")}>
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </select>
         </div>
       )}
-    </div>
+      <div className="actions">
+        <button type="button" className="btn ghost small" onClick={onClose}>Cancel</button>
+        <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving\u2026" : "Save"}</button>
+      </div>
+    </form>
   );
 }
 

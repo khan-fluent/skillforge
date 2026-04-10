@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import Modal from "../components/Modal.jsx";
 
 const CATEGORIES = [
   { value: "product", label: "Products" },
@@ -19,6 +20,7 @@ export default function Domains() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", category: "product", description: "" });
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(null);
   const isAdmin = user?.role === "admin";
 
   const load = () => {
@@ -152,6 +154,7 @@ export default function Domains() {
                     isAdmin={isAdmin}
                     userId={user.id}
                     onSetLevel={setLevel}
+                    onEdit={() => setEditing(d)}
                     onDelete={deleteDomain}
                   />
                 ))}
@@ -159,11 +162,48 @@ export default function Domains() {
             </div>
           ))
       )}
+
+      <Modal open={!!editing} onClose={() => setEditing(null)} title="Edit domain">
+        {editing && <EditDomainForm domain={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
+      </Modal>
     </>
   );
 }
 
-function DomainRow({ domain: d, view, isAdmin, userId, onSetLevel, onDelete }) {
+function EditDomainForm({ domain, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: domain.name, category: domain.category || "general", description: domain.description || "" });
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try { await api.updateDomain(domain.id, form); onSaved(); }
+    catch { setBusy(false); }
+  };
+  return (
+    <form onSubmit={submit}>
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Name</label>
+        <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+      </div>
+      <div className="field" style={{ marginBottom: 14 }}>
+        <label className="label">Category</label>
+        <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+          {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+      </div>
+      <div className="field">
+        <label className="label">Description</label>
+        <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+      </div>
+      <div className="actions">
+        <button type="button" className="btn ghost small" onClick={onClose}>Cancel</button>
+        <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving\u2026" : "Save"}</button>
+      </div>
+    </form>
+  );
+}
+
+function DomainRow({ domain: d, view, isAdmin, userId, onSetLevel, onEdit, onDelete }) {
   const isGap = view === "gaps";
   const riskColor = d.bus_factor === 0 ? "var(--bad)" : d.bus_factor === 1 ? "var(--warn)" : "var(--good)";
 
@@ -223,14 +263,12 @@ function DomainRow({ domain: d, view, isAdmin, userId, onSetLevel, onDelete }) {
       )}
 
       {isAdmin && !isGap && (
-        <button
-          className="btn ghost small"
-          onClick={() => onDelete(d.id)}
-          style={{ padding: "4px 10px", fontSize: 14, lineHeight: 1, color: "var(--ink-mute)" }}
-          title="Delete domain"
-        >
-          &times;
-        </button>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button className="btn ghost small" onClick={onEdit}
+            style={{ padding: "4px 8px", fontSize: 11, color: "var(--ink-mute)" }}>Edit</button>
+          <button className="btn ghost small" onClick={() => onDelete(d.id)}
+            style={{ padding: "4px 10px", fontSize: 14, lineHeight: 1, color: "var(--ink-mute)" }}>&times;</button>
+        </div>
       )}
     </div>
   );

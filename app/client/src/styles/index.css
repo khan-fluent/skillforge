@@ -730,23 +730,55 @@ input, textarea, select { font-family: inherit; }
 }
 
 /* Proficiency inline editor (Skills page) */
-.prof-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
-.prof-row-name { flex: 1; font-size: 13px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.prof-dots { display: flex; gap: 3px; }
-.prof-dot {
-  width: 26px; height: 26px; border-radius: 6px;
-  border: 1px solid var(--line); background: transparent;
-  font-size: 10px; font-weight: 700; color: var(--ink-mute);
-  cursor: pointer; transition: all 0.12s ease;
-  display: flex; align-items: center; justify-content: center;
+.prof-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 10px;
 }
-.prof-dot:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.prof-dot.active { border-color: transparent; color: #fff; }
-.prof-dot.active.l1 { background: var(--warm-1); color: var(--warm-5); }
-.prof-dot.active.l2 { background: var(--warm-2); color: var(--warm-5); }
-.prof-dot.active.l3 { background: var(--warm-3); }
-.prof-dot.active.l4 { background: var(--warm-4); }
-.prof-dot.active.l5 { background: var(--warm-5); color: var(--warm-1); }
+.prof-header-label {
+  font-size: 11px; color: var(--ink-mute); text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.prof-scale-labels {
+  display: flex; gap: 0; width: 200px; justify-content: space-between;
+  font-size: 9px; color: var(--ink-faint); letter-spacing: 0.02em;
+  margin-right: 72px;
+}
+.prof-row {
+  display: flex; align-items: center; gap: 12px; padding: 5px 0;
+}
+.prof-row-name {
+  flex: 1; font-size: 13px; font-weight: 500; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.prof-bar {
+  display: flex; gap: 3px; width: 200px; flex-shrink: 0;
+}
+.prof-seg {
+  flex: 1; height: 28px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent;
+  cursor: pointer; transition: all 0.15s ease;
+  position: relative;
+}
+.prof-seg:hover { border-color: var(--accent); background: var(--accent-soft); }
+.prof-seg.filled {
+  border-color: transparent;
+  background: var(--accent);
+  opacity: 0.35;
+}
+.prof-seg.filled.edge {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+.prof-seg.filled:nth-child(1) { opacity: 0.2; }
+.prof-seg.filled:nth-child(2) { opacity: 0.35; }
+.prof-seg.filled:nth-child(3) { opacity: 0.5; }
+.prof-seg.filled:nth-child(4) { opacity: 0.7; }
+.prof-seg.filled:nth-child(5) { opacity: 0.9; }
+.prof-seg.filled.edge { opacity: 1; }
+.prof-level-label {
+  font-size: 11px; color: var(--ink-mute); min-width: 60px;
+  font-weight: 500;
+}
 
 /* Domain colors (used by matrix header bars and pills) */
 .domain-databases  { --d: #c8956d; }
@@ -1086,13 +1118,57 @@ input, textarea, select { font-family: inherit; }
 /* Spinner page */
 .center-fill { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 
-/* ── Dark mode refinements for elements with hardcoded colors ── */
+/* ── Dark mode refinements ── */
 [data-theme="dark"] .matrix-cell.l3 { color: var(--paper); }
 [data-theme="dark"] .matrix-cell.l4 { color: var(--paper); }
 [data-theme="dark"] .auth-aside { background: #0a0b10; }
 [data-theme="dark"] .shell-side { background: var(--paper); }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--line-strong); border-color: var(--paper); }
 [data-theme="dark"] ::selection { background: var(--accent-soft); color: var(--accent); }
+
+/* Nav sections */
+[data-theme="dark"] .nav-section-toggle:hover { background: rgba(255, 255, 255, 0.06); }
+[data-theme="dark"] .shell-side nav a:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* Pills — fix unreadable combos in dark mode */
+[data-theme="dark"] .pill.good { background: rgba(106, 173, 106, 0.15); color: var(--good); }
+[data-theme="dark"] .pill.warn { background: rgba(212, 160, 50, 0.15); color: var(--warn); }
+[data-theme="dark"] .pill.bad { background: rgba(212, 90, 58, 0.15); color: var(--bad); }
+[data-theme="dark"] .pill.accent { background: var(--accent-soft); color: var(--accent); }
+
+/* Error messages */
+[data-theme="dark"] .auth-form .error { background: rgba(212, 90, 58, 0.15); color: var(--bad); }
+
+/* Insight boxes in gaps detail */
+[data-theme="dark"] .detail-insight-text.bad { background: rgba(212, 90, 58, 0.1); }
+[data-theme="dark"] .detail-insight-text.warn { background: rgba(212, 160, 50, 0.1); }
+[data-theme="dark"] .detail-insight-text.good { background: rgba(106, 173, 106, 0.1); }
+
+/* SSO button */
+[data-theme="dark"] .auth-form .sso-btn { background: var(--paper-warm); color: var(--ink); border-color: var(--line); }
+[data-theme="dark"] .auth-form .sso-btn:hover { background: var(--paper-card); }
+[data-theme="dark"] .auth-form .divider::before,
+[data-theme="dark"] .auth-form .divider::after { background: var(--line); }
+
+/* Domain tags in tables */
+[data-theme="dark"] .gaps-table .domain-tag { background: var(--paper-warm); color: var(--ink-mute); }
+
+/* Gap analysis bars — increase fill visibility */
+[data-theme="dark"] .prof-seg.filled { background: var(--accent); }
+
+/* Matrix viz — grid lines more visible */
+[data-theme="dark"] .matrix-svg .grid-line { stroke: var(--line-strong); opacity: 0.5; }
+[data-theme="dark"] .matrix-svg .axis-label { fill: var(--ink-mute); }
+
+/* Skill doc chips */
+[data-theme="dark"] .skill-doc-chip { background: var(--paper-warm); border-color: var(--line); }
+[data-theme="dark"] .skill-doc-chip:hover { background: var(--accent-soft); }
+
+/* Domain row items */
+[data-theme="dark"] .domain-row-item:hover { background: var(--paper-card); }
+
+/* Card hover states */
+[data-theme="dark"] .card:hover { box-shadow: var(--shadow-md); }
 
 /* ── Knowledge base markdown content ── */
 .kb-content h1, .kb-content h2, .kb-content h3 { font-family: "Instrument Serif", serif; font-weight: 400; margin: 24px 0 10px; }

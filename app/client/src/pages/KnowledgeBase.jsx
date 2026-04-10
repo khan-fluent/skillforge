@@ -89,6 +89,10 @@ export default function KnowledgeBase() {
                 key={f.id} folder={f} folders={folders}
                 activeFolder={activeFolder}
                 onSelect={(id) => setActiveFolder(id)}
+                onRename={isAdmin ? async (id, newName) => {
+                  await api.updateKbFolder(id, { name: newName });
+                  reloadFolders();
+                } : null}
                 onDelete={isAdmin ? async (id) => {
                   if (!confirm("Delete this folder and all documents inside it?")) return;
                   await api.deleteKbFolder(id);
@@ -180,24 +184,50 @@ export default function KnowledgeBase() {
 
 // ─── Sub-components ───
 
-function FolderItem({ name, active, onClick, count, indent = 0, onDelete }) {
+function FolderItem({ name, active, onClick, count, indent = 0, onRename, onDelete }) {
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState(name);
+
+  const submitRename = async () => {
+    if (newName.trim() && newName !== name && onRename) {
+      await onRename(newName.trim());
+    }
+    setRenaming(false);
+  };
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <button
-        onClick={onClick}
-        style={{
-          flex: 1, textAlign: "left",
-          padding: `8px 12px 8px ${12 + indent * 16}px`,
-          borderRadius: 10, fontSize: 13, fontWeight: 500,
-          color: active ? "var(--ink)" : "var(--ink-soft)",
-          background: active ? "var(--paper-card)" : "transparent",
-          boxShadow: active ? "var(--shadow-sm)" : "none",
-          transition: "all 0.15s ease",
-        }}
-      >
-        {name}
-        {count != null && <span className="mono" style={{ marginLeft: 6, fontSize: 10, color: "var(--ink-mute)" }}>{count}</span>}
-      </button>
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      {renaming ? (
+        <input
+          className="input"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onBlur={submitRename}
+          onKeyDown={(e) => { if (e.key === "Enter") submitRename(); if (e.key === "Escape") setRenaming(false); }}
+          autoFocus
+          style={{ flex: 1, fontSize: 13, padding: "6px 10px", marginLeft: indent * 16 }}
+        />
+      ) : (
+        <button
+          onClick={onClick}
+          onDoubleClick={(e) => { if (onRename) { e.preventDefault(); setRenaming(true); } }}
+          style={{
+            flex: 1, textAlign: "left",
+            padding: `8px 12px 8px ${12 + indent * 16}px`,
+            borderRadius: 10, fontSize: 13, fontWeight: 500,
+            color: active ? "var(--ink)" : "var(--ink-soft)",
+            background: active ? "var(--paper-card)" : "transparent",
+            boxShadow: active ? "var(--shadow-sm)" : "none",
+            transition: "all 0.15s ease",
+          }}
+        >
+          {name}
+          {count != null && <span className="mono" style={{ marginLeft: 6, fontSize: 10, color: "var(--ink-mute)" }}>{count}</span>}
+        </button>
+      )}
+      {onRename && !renaming && (
+        <button onClick={() => setRenaming(true)} style={{ color: "var(--ink-mute)", fontSize: 10, padding: "2px 4px", opacity: 0.4 }} title="Rename">Edit</button>
+      )}
       {onDelete && (
         <button onClick={onDelete} style={{ color: "var(--ink-mute)", fontSize: 14, padding: "4px 6px", opacity: 0.5 }} title="Delete">×</button>
       )}
@@ -205,7 +235,7 @@ function FolderItem({ name, active, onClick, count, indent = 0, onDelete }) {
   );
 }
 
-function FolderTreeItem({ folder, folders, activeFolder, onSelect, onDelete, depth = 0 }) {
+function FolderTreeItem({ folder, folders, activeFolder, onSelect, onRename, onDelete, depth = 0 }) {
   const children = folders.filter((f) => f.parent_id === folder.id);
   return (
     <>
@@ -214,10 +244,11 @@ function FolderTreeItem({ folder, folders, activeFolder, onSelect, onDelete, dep
         active={activeFolder === folder.id}
         onClick={() => onSelect(folder.id)}
         indent={depth + 1}
+        onRename={onRename ? async (newName) => { await onRename(folder.id, newName); } : null}
         onDelete={onDelete ? () => onDelete(folder.id) : null}
       />
       {children.map((c) => (
-        <FolderTreeItem key={c.id} folder={c} folders={folders} activeFolder={activeFolder} onSelect={onSelect} onDelete={onDelete} depth={depth + 1} />
+        <FolderTreeItem key={c.id} folder={c} folders={folders} activeFolder={activeFolder} onSelect={onSelect} onRename={onRename} onDelete={onDelete} depth={depth + 1} />
       ))}
     </>
   );

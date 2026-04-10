@@ -41,6 +41,24 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Update a domain
+router.put("/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { name, category, description } = req.body;
+    const { rows } = await query(
+      `UPDATE domains SET
+         name = COALESCE($3, name),
+         category = COALESCE($4, category),
+         description = COALESCE($5, description)
+       WHERE id = $1 AND team_id = $2
+       RETURNING *`,
+      [req.params.id, req.user.team_id, name, category, description]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Domain not found" });
+    res.json(rows[0]);
+  } catch (e) { next(e); }
+});
+
 // Delete a domain
 router.delete("/:id", requireAuth, requireAdmin, async (req, res, next) => {
   try {

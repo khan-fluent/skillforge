@@ -45,6 +45,32 @@ router.post("/", requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.put("/:id", requireAuth, async (req, res, next) => {
+  try {
+    const { name, issuer, issued_on, expires_on, credential_url } = req.body;
+    // Owner or admin can edit
+    const { rows: existing } = await query(
+      `SELECT c.id, c.user_id FROM certifications c JOIN users u ON u.id = c.user_id WHERE c.id = $1 AND u.team_id = $2`,
+      [req.params.id, req.user.team_id]
+    );
+    if (!existing.length) return res.status(404).json({ error: "not found" });
+    if (existing[0].user_id !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const { rows } = await query(
+      `UPDATE certifications SET
+         name = COALESCE($2, name),
+         issuer = COALESCE($3, issuer),
+         issued_on = COALESCE($4, issued_on),
+         expires_on = COALESCE($5, expires_on),
+         credential_url = COALESCE($6, credential_url)
+       WHERE id = $1 RETURNING *`,
+      [req.params.id, name, issuer, issued_on, expires_on, credential_url]
+    );
+    res.json(rows[0]);
+  } catch (e) { next(e); }
+});
+
 router.delete("/:id", requireAuth, async (req, res, next) => {
   try {
     // Owner or admin can delete.
