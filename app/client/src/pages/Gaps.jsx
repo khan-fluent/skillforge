@@ -2,24 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api.js";
 import DonutChart from "../components/DonutChart.jsx";
 
-const VIEWS = [
-  { key: "bubble", label: "Bubble map" },
-  { key: "domain", label: "By domain" },
-  { key: "table", label: "Table" },
-];
-
 export default function Gaps() {
-  const [data, setData] = useState(null);
+  const [skillsData, setSkillsData] = useState(null);
+  const [domainsData, setDomainsData] = useState(null);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all");
-  const [view, setView] = useState("bubble");
+  const [riskFilter, setRiskFilter] = useState("all");
+  const [source, setSource] = useState("skills"); // skills | domains
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    api.gaps()
-      .then(setData)
+    Promise.all([api.gaps(), api.domainGaps()])
+      .then(([s, d]) => { setSkillsData(s); setDomainsData(d); })
       .catch((e) => { console.error("Gaps fetch failed:", e); setError(e.message); });
   }, []);
+
+  // Clear selection when switching source
+  useEffect(() => { setSelected(null); }, [source]);
 
   if (error) return (
     <div>
@@ -30,15 +28,16 @@ export default function Gaps() {
     </div>
   );
 
-  if (!data) return <div style={{ padding: 48 }}><span className="loader"><span /><span /><span /></span></div>;
+  if (!skillsData || !domainsData) return <div style={{ padding: 48 }}><span className="loader"><span /><span /><span /></span></div>;
 
-  const skills = data.skills || [];
+  const data = source === "skills" ? skillsData : domainsData;
+  const items = (source === "skills" ? data.skills : data.domains) || [];
   const summary = data.summary || { critical: 0, high_risk: 0, healthy: 0, total: 0 };
 
-  const filtered = filter === "critical" ? skills.filter((s) => s.bus_factor === 0)
-    : filter === "high" ? skills.filter((s) => s.bus_factor === 1)
-    : filter === "healthy" ? skills.filter((s) => s.bus_factor >= 2)
-    : skills;
+  const filtered = riskFilter === "critical" ? items.filter((s) => s.bus_factor === 0)
+    : riskFilter === "high" ? items.filter((s) => s.bus_factor === 1)
+    : riskFilter === "healthy" ? items.filter((s) => s.bus_factor >= 2)
+    : items;
 
   const healthPct = summary.total > 0 ? Math.round((summary.healthy / summary.total) * 100) : 0;
 
@@ -51,7 +50,7 @@ export default function Gaps() {
         </div>
       </div>
 
-      {/* Compact top bar: donut + stat pills + view toggle */}
+      {/* Top bar: donut + source toggle + risk pills */}
       <div className="gaps-topbar">
         <div className="gaps-donut-mini">
           <DonutChart
@@ -68,22 +67,22 @@ export default function Gaps() {
 
         <div className="gaps-pills">
           <button
-            className={`gaps-pill critical ${filter === "critical" ? "active" : ""}`}
-            onClick={() => setFilter(filter === "critical" ? "all" : "critical")}
+            className={`gaps-pill critical ${riskFilter === "critical" ? "active" : ""}`}
+            onClick={() => setRiskFilter(riskFilter === "critical" ? "all" : "critical")}
           >
             <span className="gaps-pill-count">{summary.critical}</span>
             <span className="gaps-pill-label">Critical</span>
           </button>
           <button
-            className={`gaps-pill warn ${filter === "high" ? "active" : ""}`}
-            onClick={() => setFilter(filter === "high" ? "all" : "high")}
+            className={`gaps-pill warn ${riskFilter === "high" ? "active" : ""}`}
+            onClick={() => setRiskFilter(riskFilter === "high" ? "all" : "high")}
           >
             <span className="gaps-pill-count">{summary.high_risk}</span>
             <span className="gaps-pill-label">At risk</span>
           </button>
           <button
-            className={`gaps-pill good ${filter === "healthy" ? "active" : ""}`}
-            onClick={() => setFilter(filter === "healthy" ? "all" : "healthy")}
+            className={`gaps-pill good ${riskFilter === "healthy" ? "active" : ""}`}
+            onClick={() => setRiskFilter(riskFilter === "healthy" ? "all" : "healthy")}
           >
             <span className="gaps-pill-count">{summary.healthy}</span>
             <span className="gaps-pill-label">Healthy</span>
@@ -91,50 +90,44 @@ export default function Gaps() {
         </div>
 
         <div className="gaps-view-toggle">
-          {VIEWS.map((v) => (
-            <button
-              key={v.key}
-              className={`gaps-view-btn ${view === v.key ? "active" : ""}`}
-              onClick={() => setView(v.key)}
-            >
-              {v.label}
-            </button>
-          ))}
+          <button className={`gaps-view-btn ${source === "skills" ? "active" : ""}`} onClick={() => setSource("skills")}>
+            Skills
+          </button>
+          <button className={`gaps-view-btn ${source === "domains" ? "active" : ""}`} onClick={() => setSource("domains")}>
+            Domains
+          </button>
         </div>
       </div>
 
       {/* Filter indicator */}
-      {filter !== "all" && (
+      {riskFilter !== "all" && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-            Showing: <strong style={{ textTransform: "capitalize" }}>{filter === "high" ? "At risk" : filter}</strong> ({filtered.length})
+            Showing: <strong>{riskFilter === "high" ? "At risk" : riskFilter === "critical" ? "Critical" : "Healthy"}</strong> ({filtered.length})
           </span>
-          <button className="btn ghost small" onClick={() => setFilter("all")} style={{ padding: "4px 12px", fontSize: 11 }}>
+          <button className="btn ghost small" onClick={() => setRiskFilter("all")} style={{ padding: "4px 12px", fontSize: 11 }}>
             Show all
           </button>
         </div>
       )}
 
-      {/* Main visualization */}
+      {/* Table + detail panel */}
       <div className="gaps-main">
         <div className={`gaps-viz ${selected ? "has-detail" : ""}`}>
-          {skills.length === 0 ? (
+          {items.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: 48, color: "var(--ink-mute)" }}>
-              Add some skills and set proficiencies — gap analysis will fill in here.
+              {source === "skills"
+                ? "Add some skills and set proficiencies \u2014 gap analysis will fill in here."
+                : "Add some domains and set proficiencies \u2014 gap analysis will fill in here."}
             </div>
-          ) : view === "bubble" ? (
-            <BubbleView skills={filtered} selected={selected} onSelect={setSelected} />
-          ) : view === "domain" ? (
-            <DomainView skills={filtered} onSelect={setSelected} />
           ) : (
-            <TableView skills={filtered} selected={selected} onSelect={setSelected} />
+            <GapsTable items={filtered} source={source} selected={selected} onSelect={setSelected} />
           )}
         </div>
 
-        {/* Detail panel */}
         {selected && (
           <div className="gaps-detail">
-            <DetailPanel skill={selected} onClose={() => setSelected(null)} />
+            <DetailPanel item={selected} source={source} onClose={() => setSelected(null)} />
           </div>
         )}
       </div>
@@ -142,110 +135,9 @@ export default function Gaps() {
   );
 }
 
-// ─── Bubble Map ──────────────────────────────────────────────────────────────
+// ─── Table ───────────────────────────────────────────────────────────────────
 
-function BubbleView({ skills, selected, onSelect }) {
-  const maxKnown = Math.max(...skills.map((s) => s.total_known), 1);
-
-  // Group by domain for spatial clustering
-  const grouped = useMemo(() => {
-    const map = {};
-    for (const s of skills) {
-      if (!map[s.domain]) map[s.domain] = [];
-      map[s.domain].push(s);
-    }
-    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [skills]);
-
-  return (
-    <div className="bubble-map">
-      {grouped.map(([domain, items]) => (
-        <div key={domain} className="bubble-cluster">
-          <div className="bubble-domain-label">{domain}</div>
-          <div className="bubble-row">
-            {items.map((s) => {
-              const size = 36 + (s.total_known / maxKnown) * 48;
-              const color = s.bus_factor === 0 ? "var(--bad)" : s.bus_factor === 1 ? "var(--warn)" : "var(--good)";
-              const isSelected = selected?.id === s.id;
-              return (
-                <button
-                  key={s.id}
-                  className={`bubble ${isSelected ? "selected" : ""}`}
-                  style={{
-                    width: size,
-                    height: size,
-                    background: color,
-                    opacity: isSelected ? 1 : 0.75,
-                  }}
-                  onClick={() => onSelect(isSelected ? null : s)}
-                  title={`${s.name}: bus factor ${s.bus_factor}, ${s.total_known} know it`}
-                >
-                  <span className="bubble-label">{s.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Domain Bars ─────────────────────────────────────────────────────────────
-
-function DomainView({ skills, onSelect }) {
-  const domains = useMemo(() => {
-    const map = {};
-    for (const s of skills) {
-      if (!map[s.domain]) map[s.domain] = { critical: [], high: [], healthy: [] };
-      if (s.bus_factor === 0) map[s.domain].critical.push(s);
-      else if (s.bus_factor === 1) map[s.domain].high.push(s);
-      else map[s.domain].healthy.push(s);
-    }
-    return Object.entries(map).sort(
-      (a, b) => (b[1].critical.length + b[1].high.length) - (a[1].critical.length + a[1].high.length)
-    );
-  }, [skills]);
-
-  const maxTotal = Math.max(...domains.map(([, d]) => d.critical.length + d.high.length + d.healthy.length), 1);
-
-  return (
-    <div className="domain-bars">
-      {domains.map(([domain, info]) => {
-        const total = info.critical.length + info.high.length + info.healthy.length;
-        return (
-          <div key={domain} className="domain-bar-row">
-            <div className="domain-bar-label">
-              <span className="domain-bar-name">{domain}</span>
-              <span className="domain-bar-count">{info.critical.length + info.high.length} at risk / {total}</span>
-            </div>
-            <div className="domain-bar-track" style={{ width: `${(total / maxTotal) * 100}%`, minWidth: 80 }}>
-              {info.critical.map((s) => (
-                <button key={s.id} className="domain-bar-seg critical" style={{ flex: 1 }} onClick={() => onSelect(s)} title={s.name}>
-                  <span>{s.name}</span>
-                </button>
-              ))}
-              {info.high.map((s) => (
-                <button key={s.id} className="domain-bar-seg warn" style={{ flex: 1 }} onClick={() => onSelect(s)} title={s.name}>
-                  <span>{s.name}</span>
-                </button>
-              ))}
-              {info.healthy.map((s) => (
-                <button key={s.id} className="domain-bar-seg good" style={{ flex: 1 }} onClick={() => onSelect(s)} title={s.name}>
-                  <span>{s.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Table View ──────────────────────────────────────────────────────────────
-
-function TableView({ skills, selected, onSelect }) {
+function GapsTable({ items, source, selected, onSelect }) {
   const [sortCol, setSortCol] = useState("bus_factor");
   const [sortDir, setSortDir] = useState("asc");
 
@@ -255,13 +147,13 @@ function TableView({ skills, selected, onSelect }) {
   };
 
   const sorted = useMemo(() => {
-    return [...skills].sort((a, b) => {
+    return [...items].sort((a, b) => {
       const mul = sortDir === "asc" ? 1 : -1;
       if (sortCol === "name") return mul * a.name.localeCompare(b.name);
-      if (sortCol === "domain") return mul * a.domain.localeCompare(b.domain);
+      if (sortCol === "group") return mul * (a.domain || a.category || "").localeCompare(b.domain || b.category || "");
       return mul * ((a[sortCol] ?? 0) - (b[sortCol] ?? 0));
     });
-  }, [skills, sortCol, sortDir]);
+  }, [items, sortCol, sortDir]);
 
   const SortHead = ({ col, children }) => (
     <th onClick={() => toggleSort(col)} style={{ cursor: "pointer", userSelect: "none" }}>
@@ -269,13 +161,15 @@ function TableView({ skills, selected, onSelect }) {
     </th>
   );
 
+  const groupLabel = source === "skills" ? "Domain" : "Category";
+
   return (
     <div className="gaps-table-wrap">
       <table className="gaps-table">
         <thead>
           <tr>
-            <SortHead col="name">Skill</SortHead>
-            <SortHead col="domain">Domain</SortHead>
+            <SortHead col="name">Name</SortHead>
+            <SortHead col="group">{groupLabel}</SortHead>
             <SortHead col="bus_factor">Bus factor</SortHead>
             <SortHead col="total_known">People</SortHead>
             <th>Owners</th>
@@ -291,7 +185,7 @@ function TableView({ skills, selected, onSelect }) {
               style={{ cursor: "pointer" }}
             >
               <td style={{ fontWeight: 600 }}>{s.name}</td>
-              <td><span className="domain-tag">{s.domain}</span></td>
+              <td><span className="domain-tag">{s.domain || s.category}</span></td>
               <td>
                 <span className="bf-inline" style={{ color: riskColor(s.bus_factor) }}>{s.bus_factor}</span>
               </td>
@@ -306,6 +200,9 @@ function TableView({ skills, selected, onSelect }) {
               </td>
             </tr>
           ))}
+          {sorted.length === 0 && (
+            <tr><td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--ink-mute)" }}>No items match this filter.</td></tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -314,15 +211,16 @@ function TableView({ skills, selected, onSelect }) {
 
 // ─── Detail Panel ────────────────────────────────────────────────────────────
 
-function DetailPanel({ skill: s, onClose }) {
+function DetailPanel({ item: s, source, onClose }) {
   const color = riskColor(s.bus_factor);
   const pct = s.total_known > 0 ? Math.round((s.bus_factor / s.total_known) * 100) : 0;
+  const groupLabel = source === "skills" ? s.domain : s.category;
 
   return (
     <div className="card gaps-detail-card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
         <div>
-          <div style={{ fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.domain}</div>
+          <div style={{ fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{groupLabel}</div>
           <h2 style={{ margin: "4px 0 0", fontSize: 22 }}>{s.name}</h2>
         </div>
         <button className="btn ghost small" onClick={onClose} style={{ padding: "4px 10px", fontSize: 16, lineHeight: 1 }}>&times;</button>
@@ -357,7 +255,6 @@ function DetailPanel({ skill: s, onClose }) {
         </div>
       </div>
 
-      {/* Insight */}
       <div className="detail-insight">
         {s.bus_factor === 0 && (
           <div className="detail-insight-text bad">
@@ -376,7 +273,7 @@ function DetailPanel({ skill: s, onClose }) {
         )}
         {s.total_known > s.bus_factor && (
           <div className="detail-insight-sub">
-            {s.total_known - s.bus_factor} other{s.total_known - s.bus_factor > 1 ? "s" : ""} know this skill at a lower level — potential upskilling candidates.
+            {s.total_known - s.bus_factor} other{s.total_known - s.bus_factor > 1 ? "s" : ""} know this at a lower level — potential upskilling candidates.
           </div>
         )}
       </div>
