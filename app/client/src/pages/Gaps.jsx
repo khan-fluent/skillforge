@@ -7,7 +7,7 @@ export default function Gaps() {
   const [domainsData, setDomainsData] = useState(null);
   const [error, setError] = useState(null);
   const [riskFilter, setRiskFilter] = useState("all");
-  const [source, setSource] = useState("skills"); // skills | domains
+  const [source, setSource] = useState("skills");
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
@@ -16,14 +16,13 @@ export default function Gaps() {
       .catch((e) => { console.error("Gaps fetch failed:", e); setError(e.message); });
   }, []);
 
-  // Clear selection when switching source
-  useEffect(() => { setSelected(null); }, [source]);
+  useEffect(() => { setSelected(null); setRiskFilter("all"); }, [source]);
 
   if (error) return (
     <div>
       <div className="page-hd"><div><h1>Knowledge gaps</h1></div></div>
       <div className="card" style={{ textAlign: "center", padding: 48, color: "var(--bad)" }}>
-        Failed to load: {error}. Try refreshing or signing out and back in.
+        Failed to load: {error}
       </div>
     </div>
   );
@@ -50,7 +49,7 @@ export default function Gaps() {
         </div>
       </div>
 
-      {/* Top bar: donut + source toggle + risk pills */}
+      {/* Summary strip */}
       <div className="gaps-topbar">
         <div className="gaps-donut-mini">
           <DonutChart
@@ -66,62 +65,45 @@ export default function Gaps() {
         </div>
 
         <div className="gaps-pills">
-          <button
-            className={`gaps-pill critical ${riskFilter === "critical" ? "active" : ""}`}
-            onClick={() => setRiskFilter(riskFilter === "critical" ? "all" : "critical")}
-          >
-            <span className="gaps-pill-count">{summary.critical}</span>
-            <span className="gaps-pill-label">Critical</span>
-          </button>
-          <button
-            className={`gaps-pill warn ${riskFilter === "high" ? "active" : ""}`}
-            onClick={() => setRiskFilter(riskFilter === "high" ? "all" : "high")}
-          >
-            <span className="gaps-pill-count">{summary.high_risk}</span>
-            <span className="gaps-pill-label">At risk</span>
-          </button>
-          <button
-            className={`gaps-pill good ${riskFilter === "healthy" ? "active" : ""}`}
-            onClick={() => setRiskFilter(riskFilter === "healthy" ? "all" : "healthy")}
-          >
-            <span className="gaps-pill-count">{summary.healthy}</span>
-            <span className="gaps-pill-label">Healthy</span>
-          </button>
+          {[
+            { key: "critical", label: "Critical", count: summary.critical, cls: "critical" },
+            { key: "high", label: "At risk", count: summary.high_risk, cls: "warn" },
+            { key: "healthy", label: "Healthy", count: summary.healthy, cls: "good" },
+          ].map((p) => (
+            <button key={p.key}
+              className={`gaps-pill ${p.cls} ${riskFilter === p.key ? "active" : ""}`}
+              onClick={() => setRiskFilter(riskFilter === p.key ? "all" : p.key)}
+            >
+              <span className="gaps-pill-count">{p.count}</span>
+              <span className="gaps-pill-label">{p.label}</span>
+            </button>
+          ))}
         </div>
 
         <div className="gaps-view-toggle">
-          <button className={`gaps-view-btn ${source === "skills" ? "active" : ""}`} onClick={() => setSource("skills")}>
-            Skills
-          </button>
-          <button className={`gaps-view-btn ${source === "domains" ? "active" : ""}`} onClick={() => setSource("domains")}>
-            Domains
-          </button>
+          <button className={`gaps-view-btn ${source === "skills" ? "active" : ""}`} onClick={() => setSource("skills")}>Skills</button>
+          <button className={`gaps-view-btn ${source === "domains" ? "active" : ""}`} onClick={() => setSource("domains")}>Domains</button>
         </div>
       </div>
 
-      {/* Filter indicator */}
       {riskFilter !== "all" && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>
             Showing: <strong>{riskFilter === "high" ? "At risk" : riskFilter === "critical" ? "Critical" : "Healthy"}</strong> ({filtered.length})
           </span>
-          <button className="btn ghost small" onClick={() => setRiskFilter("all")} style={{ padding: "4px 12px", fontSize: 11 }}>
-            Show all
-          </button>
+          <button className="btn ghost small" onClick={() => setRiskFilter("all")} style={{ padding: "4px 12px", fontSize: 11 }}>Show all</button>
         </div>
       )}
 
-      {/* Table + detail panel */}
+      {/* Risk visualization + detail panel */}
       <div className="gaps-main">
         <div className={`gaps-viz ${selected ? "has-detail" : ""}`}>
           {items.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: 48, color: "var(--ink-mute)" }}>
-              {source === "skills"
-                ? "Add some skills and set proficiencies \u2014 gap analysis will fill in here."
-                : "Add some domains and set proficiencies \u2014 gap analysis will fill in here."}
+              {source === "skills" ? "Add skills and set proficiencies to see gap analysis." : "Add domains and set proficiencies to see gap analysis."}
             </div>
           ) : (
-            <GapsTable items={filtered} source={source} selected={selected} onSelect={setSelected} />
+            <RiskChart items={filtered} selected={selected} onSelect={setSelected} />
           )}
         </div>
 
@@ -135,76 +117,83 @@ export default function Gaps() {
   );
 }
 
-// ─── Table ───────────────────────────────────────────────────────────────────
+// ─── Risk Bar Chart (SVG) ───────────────────────────────────────────────────
 
-function GapsTable({ items, source, selected, onSelect }) {
-  const [sortCol, setSortCol] = useState("bus_factor");
-  const [sortDir, setSortDir] = useState("asc");
+function RiskChart({ items, selected, onSelect }) {
+  const ROW_H = 38;
+  const W = 800;
+  const PAD = { top: 10, left: 180, right: 60, bottom: 10 };
+  const H = PAD.top + items.length * ROW_H + PAD.bottom;
+  const plotW = W - PAD.left - PAD.right;
 
-  const toggleSort = (col) => {
-    if (sortCol === col) setSortDir(sortDir === "asc" ? "desc" : "asc");
-    else { setSortCol(col); setSortDir("asc"); }
-  };
-
-  const sorted = useMemo(() => {
-    return [...items].sort((a, b) => {
-      const mul = sortDir === "asc" ? 1 : -1;
-      if (sortCol === "name") return mul * a.name.localeCompare(b.name);
-      if (sortCol === "group") return mul * (a.domain || a.category || "").localeCompare(b.domain || b.category || "");
-      return mul * ((a[sortCol] ?? 0) - (b[sortCol] ?? 0));
-    });
-  }, [items, sortCol, sortDir]);
-
-  const SortHead = ({ col, children }) => (
-    <th onClick={() => toggleSort(col)} style={{ cursor: "pointer", userSelect: "none" }}>
-      {children} {sortCol === col && <span>{sortDir === "asc" ? "\u25B2" : "\u25BC"}</span>}
-    </th>
-  );
-
-  const groupLabel = source === "skills" ? "Domain" : "Category";
+  // Max people known for scaling
+  const maxKnown = Math.max(...items.map((s) => s.total_known), 1);
 
   return (
-    <div className="gaps-table-wrap">
-      <table className="gaps-table">
-        <thead>
-          <tr>
-            <SortHead col="name">Name</SortHead>
-            <SortHead col="group">{groupLabel}</SortHead>
-            <SortHead col="bus_factor">Bus factor</SortHead>
-            <SortHead col="total_known">People</SortHead>
-            <th>Owners</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((s) => (
-            <tr
-              key={s.id}
-              className={selected?.id === s.id ? "selected" : ""}
-              onClick={() => onSelect(selected?.id === s.id ? null : s)}
+    <div className="risk-chart-wrap">
+      <svg viewBox={`0 0 ${W} ${H}`} className="matrix-svg risk-chart-svg">
+        {/* Background grid */}
+        {items.length > 0 && [0.25, 0.5, 0.75, 1].map((pct) => (
+          <line key={pct} x1={PAD.left + plotW * pct} y1={PAD.top} x2={PAD.left + plotW * pct} y2={H - PAD.bottom}
+            className="grid-line" strokeDasharray="2 4" />
+        ))}
+
+        {items.map((s, i) => {
+          const cy = PAD.top + i * ROW_H + ROW_H / 2;
+          const isSelected = selected?.id === s.id;
+          const tier = s.bus_factor === 0 ? "critical" : s.bus_factor === 1 ? "warn" : "good";
+          const color = s.bus_factor === 0 ? "var(--bad)" : s.bus_factor === 1 ? "var(--warn)" : "var(--good)";
+          const fillColor = s.bus_factor === 0 ? "rgba(184,72,46,0.6)" : s.bus_factor === 1 ? "rgba(184,134,46,0.5)" : "rgba(91,138,91,0.45)";
+          const bgColor = s.bus_factor === 0 ? "rgba(184,72,46,0.1)" : s.bus_factor === 1 ? "rgba(184,134,46,0.08)" : "rgba(91,138,91,0.06)";
+
+          const totalW = (s.total_known / maxKnown) * plotW;
+          const profW = s.total_known > 0 ? (s.bus_factor / s.total_known) * totalW : 0;
+
+          return (
+            <g key={s.id}
+              onClick={() => onSelect(isSelected ? null : s)}
               style={{ cursor: "pointer" }}
             >
-              <td style={{ fontWeight: 600 }}>{s.name}</td>
-              <td><span className="domain-tag">{s.domain || s.category}</span></td>
-              <td>
-                <span className="bf-inline" style={{ color: riskColor(s.bus_factor) }}>{s.bus_factor}</span>
-              </td>
-              <td>{s.total_known}</td>
-              <td style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-                {s.proficient_people?.length ? s.proficient_people.join(", ") : "\u2014"}
-              </td>
-              <td>
-                <span className={`pill ${s.bus_factor === 0 ? "bad" : s.bus_factor === 1 ? "warn" : "good"}`} style={{ fontSize: 10 }}>
-                  {s.bus_factor === 0 ? "Critical" : s.bus_factor === 1 ? "At risk" : "Healthy"}
-                </span>
-              </td>
-            </tr>
-          ))}
-          {sorted.length === 0 && (
-            <tr><td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--ink-mute)" }}>No items match this filter.</td></tr>
-          )}
-        </tbody>
-      </table>
+              {/* Row hover bg */}
+              <rect x={0} y={cy - ROW_H / 2} width={W} height={ROW_H}
+                fill={isSelected ? "var(--accent-soft)" : "transparent"}
+                className="spread-row-bg" rx={4} />
+
+              {/* Label */}
+              <text x={PAD.left - 12} y={cy + 4} textAnchor="end"
+                style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, fill: "var(--ink-soft)" }}>
+                {s.name.length > 22 ? s.name.slice(0, 20) + "\u2026" : s.name}
+              </text>
+
+              {/* Total known bar (background) */}
+              <rect x={PAD.left} y={cy - 10} width={Math.max(totalW, 4)} height={20}
+                rx={4} fill={bgColor} />
+
+              {/* Proficient bar (foreground) */}
+              <rect x={PAD.left} y={cy - 10} width={Math.max(profW, s.bus_factor > 0 ? 4 : 0)} height={20}
+                rx={4} fill={fillColor}
+                style={{ transition: "width 0.3s ease" }} />
+
+              {/* Bus factor number */}
+              <text x={PAD.left + Math.max(totalW, 4) + 8} y={cy + 4}
+                style={{ fontSize: 13, fontWeight: 700, fill: color, fontFamily: '"Instrument Serif", serif' }}>
+                {s.bus_factor}
+              </text>
+
+              {/* Risk indicator dot */}
+              <circle cx={W - PAD.right / 2} cy={cy} r={5}
+                fill={color} opacity={s.bus_factor === 0 ? 1 : s.bus_factor === 1 ? 0.7 : 0.4} />
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div className="risk-chart-legend">
+        <span><span className="risk-legend-bar" style={{ background: "rgba(91,138,91,0.45)" }} /> Proficient</span>
+        <span><span className="risk-legend-bar" style={{ background: "rgba(91,138,91,0.08)" }} /> Known (any level)</span>
+        <span style={{ marginLeft: "auto", color: "var(--ink-mute)", fontSize: 11 }}>Click any row for details</span>
+      </div>
     </div>
   );
 }
@@ -245,8 +234,7 @@ function DetailPanel({ item: s, source, onClose }) {
         <div className="detail-bar">
           <div style={{
             width: `${s.total_known > 0 ? (s.bus_factor / s.total_known) * 100 : 0}%`,
-            background: color,
-            minWidth: s.bus_factor > 0 ? 4 : 0,
+            background: color, minWidth: s.bus_factor > 0 ? 4 : 0,
           }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-mute)", marginTop: 4 }}>
@@ -263,17 +251,17 @@ function DetailPanel({ item: s, source, onClose }) {
         )}
         {s.bus_factor === 1 && (
           <div className="detail-insight-text warn">
-            <strong>Risk:</strong> Only <strong>{s.proficient_people?.[0]}</strong> is proficient. If they're unavailable, the team has a gap. Pair them for knowledge transfer.
+            <strong>Risk:</strong> Only <strong>{s.proficient_people?.[0]}</strong> is proficient. If they're unavailable, the team has a gap.
           </div>
         )}
         {s.bus_factor >= 2 && (
           <div className="detail-insight-text good">
-            <strong>Healthy:</strong> {s.bus_factor} people are proficient in {s.name}. No immediate continuity risk.
+            <strong>Healthy:</strong> {s.bus_factor} people are proficient in {s.name}. No immediate risk.
           </div>
         )}
         {s.total_known > s.bus_factor && (
           <div className="detail-insight-sub">
-            {s.total_known - s.bus_factor} other{s.total_known - s.bus_factor > 1 ? "s" : ""} know this at a lower level — potential upskilling candidates.
+            {s.total_known - s.bus_factor} other{s.total_known - s.bus_factor > 1 ? "s" : ""} know this at a lower level — upskilling candidates.
           </div>
         )}
       </div>

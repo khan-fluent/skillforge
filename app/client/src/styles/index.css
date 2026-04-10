@@ -858,6 +858,18 @@ input, textarea, select { font-family: inherit; }
 .gaps-detail { flex: 1; min-width: 300px; max-width: 380px; }
 .gaps-detail-card { position: sticky; top: 16px; }
 
+/* Risk chart */
+.risk-chart-wrap { overflow-x: auto; }
+.risk-chart-svg { width: 100%; height: auto; min-width: 600px; }
+.risk-chart-legend {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 0 0; font-size: 11px; color: var(--ink-soft);
+}
+.risk-legend-bar {
+  display: inline-block; width: 20px; height: 10px;
+  border-radius: 3px; margin-right: 4px; vertical-align: middle;
+}
+
 /* Table */
 .gaps-table-wrap { overflow-x: auto; }
 .gaps-table { width: 100%; border-collapse: collapse; font-size: 13px; }
