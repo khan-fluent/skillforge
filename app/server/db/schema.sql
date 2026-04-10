@@ -1,14 +1,6 @@
 -- Skillforge schema. Multi-tenant: every domain row scopes to a team.
--- Idempotent. Safe to run on every boot.
---
--- v1 → v2 migration: drops the old single-tenant `people` table and its
--- children. There were no real tenants on v1 (only seed data), so a
--- destructive drop is fine.
-
-DROP TABLE IF EXISTS proficiencies CASCADE;
-DROP TABLE IF EXISTS certifications CASCADE;
-DROP TABLE IF EXISTS skills CASCADE;
-DROP TABLE IF EXISTS people CASCADE;
+-- Idempotent. Safe to run on every boot. Uses CREATE TABLE IF NOT EXISTS
+-- so existing data is never touched.
 
 CREATE TABLE IF NOT EXISTS teams (
   id          SERIAL PRIMARY KEY,
