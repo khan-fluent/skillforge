@@ -20,6 +20,7 @@ import matrixRouter from "./routes/matrix.js";
 import gapsRouter from "./routes/gaps.js";
 import chatRouter from "./routes/chat.js";
 import jiraRouter from "./routes/jira.js";
+import kbRouter from "./routes/kb.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -41,6 +42,7 @@ app.use("/api/matrix", matrixRouter);
 app.use("/api/gaps", gapsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/jira", jiraRouter);
+app.use("/api/kb", kbRouter);
 
 if (process.env.NODE_ENV === "production") {
   const clientDist = join(__dirname, "public");

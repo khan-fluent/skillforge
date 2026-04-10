@@ -774,3 +774,21 @@ input, textarea, select { font-family: inherit; }
 [data-theme="dark"] .shell-side { background: var(--paper); }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--line-strong); border-color: var(--paper); }
 [data-theme="dark"] ::selection { background: var(--accent-soft); color: var(--accent); }
+
+/* ── Knowledge base markdown content ── */
+.kb-content h1, .kb-content h2, .kb-content h3 { font-family: "Instrument Serif", serif; font-weight: 400; margin: 24px 0 10px; }
+.kb-content h1 { font-size: 28px; }
+.kb-content h2 { font-size: 22px; }
+.kb-content h3 { font-size: 18px; }
+.kb-content p { margin: 0 0 14px; }
+.kb-content ul, .kb-content ol { padding-left: 24px; margin: 0 0 14px; }
+.kb-content li { margin-bottom: 4px; }
+.kb-content code { background: var(--paper-warm); padding: 2px 6px; border-radius: 4px; font-family: "Geist Mono", monospace; font-size: 13px; }
+.kb-content pre { background: var(--paper-warm); border: 1px solid var(--line); border-radius: 10px; padding: 18px; overflow-x: auto; margin: 0 0 14px; }
+.kb-content pre code { background: transparent; padding: 0; }
+.kb-content table { width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 14px; }
+.kb-content th, .kb-content td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.kb-content th { font-weight: 600; color: var(--ink-soft); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.kb-content blockquote { border-left: 3px solid var(--accent); margin: 0 0 14px; padding: 10px 18px; color: var(--ink-soft); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+.kb-content a { color: var(--accent); text-decoration: underline; }
+.kb-content hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }

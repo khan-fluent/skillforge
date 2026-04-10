@@ -103,6 +103,38 @@ ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_name VARCHAR(200);
 CREATE INDEX IF NOT EXISTS idx_jira_issues_team_date ON jira_issues(team_id, snapshot_date DESC);
 CREATE INDEX IF NOT EXISTS idx_jira_issues_assignee  ON jira_issues(team_id, assignee_email);
 
+-- Knowledge base
+CREATE TABLE IF NOT EXISTS kb_folders (
+  id          SERIAL PRIMARY KEY,
+  team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  parent_id   INTEGER REFERENCES kb_folders(id) ON DELETE CASCADE,
+  name        VARCHAR(200) NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS kb_documents (
+  id          SERIAL PRIMARY KEY,
+  team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  folder_id   INTEGER REFERENCES kb_folders(id) ON DELETE SET NULL,
+  title       VARCHAR(500) NOT NULL,
+  content     TEXT NOT NULL DEFAULT '',
+  created_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  updated_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS kb_document_skills (
+  document_id INTEGER NOT NULL REFERENCES kb_documents(id) ON DELETE CASCADE,
+  skill_id    INTEGER NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+  PRIMARY KEY (document_id, skill_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_kb_folders_team     ON kb_folders(team_id);
+CREATE INDEX IF NOT EXISTS idx_kb_documents_team   ON kb_documents(team_id);
+CREATE INDEX IF NOT EXISTS idx_kb_documents_folder ON kb_documents(folder_id);
+CREATE INDEX IF NOT EXISTS idx_kb_doc_skills_skill ON kb_document_skills(skill_id);
+
 CREATE INDEX IF NOT EXISTS idx_users_team           ON users(team_id);
 CREATE INDEX IF NOT EXISTS idx_users_invite_token   ON users(invite_token) WHERE invite_token IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_skills_team          ON skills(team_id);

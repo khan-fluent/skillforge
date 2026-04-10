@@ -2,7 +2,7 @@ import { query } from "../db/index.js";
 
 // Compact JSON snapshot of one team's skill state for Claude. Always team-scoped.
 export async function buildSnapshot(teamId) {
-  const [team, people, skills, profs, certs] = await Promise.all([
+  const [team, people, skills, profs, certs, kbDocs] = await Promise.all([
     query("SELECT id, name FROM teams WHERE id = $1", [teamId]),
     query("SELECT id, name, role, job_title FROM users WHERE team_id = $1 ORDER BY name", [teamId]),
     query("SELECT id, name, domain, deprecated FROM skills WHERE team_id = $1 ORDER BY domain, name", [teamId]),
@@ -22,6 +22,18 @@ export async function buildSnapshot(teamId) {
               END AS status
        FROM certifications c JOIN users u ON u.id = c.user_id
        WHERE u.team_id = $1`,
+      [teamId]
+    ),
+    query(
+      `SELECT d.title, LEFT(d.content, 500) AS excerpt,
+              ARRAY_REMOVE(ARRAY_AGG(s.name), NULL) AS skill_names
+       FROM kb_documents d
+       LEFT JOIN kb_document_skills ds ON ds.document_id = d.id
+       LEFT JOIN skills s ON s.id = ds.skill_id
+       WHERE d.team_id = $1
+       GROUP BY d.id
+       ORDER BY d.updated_at DESC
+       LIMIT 20`,
       [teamId]
     ),
   ]);
@@ -61,5 +73,10 @@ export async function buildSnapshot(teamId) {
     skill_count: skills.rows.length,
     people: Object.values(peopleById),
     skill_risk: skillRisk,
+    knowledge_base: kbDocs.rows.map((d) => ({
+      title: d.title,
+      excerpt: d.excerpt,
+      skills: d.skill_names,
+    })),
   };
 }

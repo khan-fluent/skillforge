@@ -57,6 +57,19 @@ export const api = {
   deleteCert:     (id) => request(`/certifications/${id}`, { method: "DELETE" }),
   chat:           (messages) => request("/chat", { method: "POST", body: JSON.stringify({ messages }) }),
 
+  // knowledge base
+  kbFolders:       () => request("/kb/folders"),
+  createKbFolder:  (data) => request("/kb/folders", { method: "POST", body: JSON.stringify(data) }),
+  updateKbFolder:  (id, data) => request(`/kb/folders/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteKbFolder:  (id) => request(`/kb/folders/${id}`, { method: "DELETE" }),
+  kbDocuments:     (folderId) => request(`/kb/documents${folderId ? `?folder_id=${folderId}` : ""}`),
+  kbDocument:      (id) => request(`/kb/documents/${id}`),
+  createKbDoc:     (data) => request("/kb/documents", { method: "POST", body: JSON.stringify(data) }),
+  updateKbDoc:     (id, data) => request(`/kb/documents/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteKbDoc:     (id) => request(`/kb/documents/${id}`, { method: "DELETE" }),
+  kbSearch:        (q) => request(`/kb/search?q=${encodeURIComponent(q)}`),
+  kbStats:         () => request("/kb/stats"),
+
   // jira / tickets
   jiraSummary:    () => request("/jira/summary"),
   jiraConnection: () => request("/jira/connection"),
