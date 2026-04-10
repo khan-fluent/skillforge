@@ -46,8 +46,8 @@ export default function JiraWidget() {
             <tr style={{ textAlign: "left", color: "var(--ink-mute)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>
               <th style={{ padding: "14px 32px" }}>Person</th>
               <th>In flight</th>
-              <th>Done · 7d</th>
-              <th>Points · 7d</th>
+              <th>Done this week</th>
+              <th>Points this week</th>
               <th style={{ paddingRight: 32, width: "32%" }}>Top ticket this week</th>
             </tr>
           </thead>
