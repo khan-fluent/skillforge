@@ -718,6 +718,36 @@ input, textarea, select { font-family: inherit; }
 .spread-row-bg { transition: fill 0.12s ease; }
 .spread-row-bg:hover { fill: var(--accent-soft); }
 
+/* Gap analysis picker */
+.gap-picker {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.gap-select { max-width: 200px; font-size: 13px; }
+.gap-vs {
+  font-size: 12px; color: var(--ink-mute); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* Proficiency inline editor (Skills page) */
+.prof-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.prof-row-name { flex: 1; font-size: 13px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-dots { display: flex; gap: 3px; }
+.prof-dot {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent;
+  font-size: 10px; font-weight: 700; color: var(--ink-mute);
+  cursor: pointer; transition: all 0.12s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.prof-dot:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.prof-dot.active { border-color: transparent; color: #fff; }
+.prof-dot.active.l1 { background: var(--warm-1); color: var(--warm-5); }
+.prof-dot.active.l2 { background: var(--warm-2); color: var(--warm-5); }
+.prof-dot.active.l3 { background: var(--warm-3); }
+.prof-dot.active.l4 { background: var(--warm-4); }
+.prof-dot.active.l5 { background: var(--warm-5); color: var(--warm-1); }
+
 /* Domain colors (used by matrix header bars and pills) */
 .domain-databases  { --d: #c8956d; }
 .domain-cloud      { --d: #6d8bb8; }

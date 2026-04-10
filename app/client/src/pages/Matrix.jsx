@@ -17,26 +17,22 @@ const PALETTE = [
 
 const VIEWS = [
   { key: "radar", label: "Radar" },
-  { key: "spread", label: "Spread" },
   { key: "gap", label: "Gap analysis" },
-  { key: "grid", label: "Edit grid" },
+  { key: "parallel", label: "Parallel" },
 ];
 
 export default function Matrix() {
-  const { user } = useAuth();
   const [skillsData, setSkillsData] = useState(null);
   const [domainsData, setDomainsData] = useState(null);
   const [source, setSource] = useState("skills");
   const [group, setGroup] = useState("all");
   const [view, setView] = useState("radar");
-  const [editing, setEditing] = useState(null);
   const [hoveredPerson, setHoveredPerson] = useState(null);
 
-  const reloadSkills = () => api.matrix().then(setSkillsData).catch(() => {});
-  const reloadDomains = () => api.domainMatrix().then(setDomainsData).catch(() => {});
-  useEffect(() => { reloadSkills(); reloadDomains(); }, []);
-
-  const reload = () => { if (source === "skills") reloadSkills(); else reloadDomains(); };
+  useEffect(() => {
+    api.matrix().then(setSkillsData).catch(() => {});
+    api.domainMatrix().then(setDomainsData).catch(() => {});
+  }, []);
 
   const data = source === "skills" ? skillsData : domainsData;
   const people = data?.people || data?.members || [];
@@ -57,14 +53,12 @@ export default function Matrix() {
 
   if (!skillsData && !domainsData) return <span className="loader"><span /><span /><span /></span>;
 
-  const canEdit = (person) => user.role === "admin" || person.id === user.id;
-
   return (
     <>
       <div className="page-hd">
         <div>
           <h1>Matrix</h1>
-          <p>Visualize and manage your team's proficiency across every {source === "skills" ? "skill" : "domain"}.</p>
+          <p>Visualize your team's proficiency across every {source === "skills" ? "skill" : "domain"}.</p>
         </div>
       </div>
 
@@ -98,79 +92,12 @@ export default function Matrix() {
           <div style={{ padding: 48, textAlign: "center" }}><span className="loader"><span /><span /><span /></span></div>
         ) : view === "radar" ? (
           <RadarChart people={people} items={visibleItems} cells={cells} cellKey={cellKey} hoveredPerson={hoveredPerson} setHoveredPerson={setHoveredPerson} />
-        ) : view === "spread" ? (
-          <SpreadChart people={people} items={visibleItems} cells={cells} cellKey={cellKey} />
         ) : view === "gap" ? (
           <GapChart people={people} items={visibleItems} cells={cells} cellKey={cellKey} />
         ) : (
-          <>
-            <div className="matrix-scroll">
-              <table className="matrix-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 280 }}>Person</th>
-                    {visibleItems.map((s) => (
-                      <th key={s.id} className="skill-h">
-                        <span className="skill-name">{s.name}</span>
-                        <span className="skill-domain">{s.domain || s.category}</span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {people.map((p) => (
-                    <tr key={p.id}>
-                      <td className="person">
-                        <div className="person-line">
-                          <div className="person-avatar">{p.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}</div>
-                          <div>
-                            <div className="person-name">{p.name}</div>
-                            <div className="person-role">{p.job_title || (p.role === "admin" ? "Admin" : "Member")}</div>
-                          </div>
-                        </div>
-                      </td>
-                      {visibleItems.map((s) => {
-                        const lvl = cells[cellKey(p.id, s.id)];
-                        return (
-                          <td key={s.id} className="cell">
-                            <div
-                              className={`matrix-cell ${lvl ? `l${lvl}` : "empty"}`}
-                              title={lvl ? `${p.name} · ${s.name} · ${LEVEL_LABELS[lvl]}` : `${p.name} · ${s.name}`}
-                              onClick={() => canEdit(p) && setEditing({ person: p, item: s, current: lvl })}
-                              style={{ cursor: canEdit(p) ? "pointer" : "default" }}
-                            >
-                              {lvl || (canEdit(p) ? "+" : "")}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="matrix-legend">
-              <span>Proficiency</span>
-              {[1, 2, 3, 4, 5].map((lv) => (
-                <div key={lv} className="swatch-row">
-                  <div className={`swatch matrix-cell l${lv}`} style={{ width: 18, height: 18 }} />
-                  {LEVEL_LABELS[lv]}
-                </div>
-              ))}
-              <div style={{ marginLeft: "auto", color: "var(--ink-mute)" }}>Click any cell to set a level.</div>
-            </div>
-          </>
+          <ParallelChart people={people} items={visibleItems} cells={cells} cellKey={cellKey} hoveredPerson={hoveredPerson} setHoveredPerson={setHoveredPerson} />
         )}
       </div>
-
-      {editing && (
-        <ProficiencyEditor
-          editing={editing}
-          source={source}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); reload(); }}
-        />
-      )}
     </>
   );
 }
@@ -193,20 +120,11 @@ function RadarChart({ people, items, cells, cellKey, hoveredPerson, setHoveredPe
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   };
 
-  const buildPolygon = (personIdx) => {
-    const p = people[personIdx];
-    return items.map((s, i) => {
-      const lvl = cells[cellKey(p.id, s.id)] || 0;
-      return polar(i, lvl);
-    });
-  };
-
   return (
     <div className="matrix-viz-wrap">
       <PersonLegend people={people} hovered={hoveredPerson} onHover={setHoveredPerson} />
       <div className="radar-center-wrap">
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="matrix-svg radar-svg">
-          {/* Grid rings */}
           {[1, 2, 3, 4, 5].map((lv) => {
             const pts = Array.from({ length: n }, (_, i) => polar(i, lv));
             const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
@@ -218,31 +136,25 @@ function RadarChart({ people, items, cells, cellKey, hoveredPerson, setHoveredPe
             );
           })}
 
-          {/* Axis spokes + labels */}
           {items.map((s, i) => {
             const end = polar(i, maxLevel);
             const label = polar(i, maxLevel + 0.8);
             return (
               <g key={s.id}>
                 <line x1={cx} y1={cy} x2={end.x} y2={end.y} className="grid-line" />
-                <text
-                  x={label.x} y={label.y}
-                  className="axis-label"
+                <text x={label.x} y={label.y} className="axis-label"
                   textAnchor={label.x < cx - 10 ? "end" : label.x > cx + 10 ? "start" : "middle"}
                   dominantBaseline={label.y < cy - 10 ? "auto" : label.y > cy + 10 ? "hanging" : "middle"}
                   style={{ fontSize: 10 }}
-                >
-                  {s.name.length > 18 ? s.name.slice(0, 16) + "\u2026" : s.name}
-                </text>
+                >{s.name.length > 18 ? s.name.slice(0, 16) + "\u2026" : s.name}</text>
               </g>
             );
           })}
 
-          {/* Person polygons */}
-          {people.map((_, pi) => {
+          {people.map((p, pi) => {
             const pal = PALETTE[pi % PALETTE.length];
-            const pts = buildPolygon(pi);
-            const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
+            const pts = items.map((s, i) => polar(i, cells[cellKey(p.id, s.id)] || 0));
+            const d = pts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x},${pt.y}`).join(" ") + " Z";
             const isHovered = hoveredPerson === pi;
             const isDimmed = hoveredPerson !== null && !isHovered;
             return (
@@ -250,7 +162,7 @@ function RadarChart({ people, items, cells, cellKey, hoveredPerson, setHoveredPe
                 <path d={d} fill={pal.fill} stroke={pal.stroke} strokeWidth={isHovered ? 2.5 : 1.5} strokeLinejoin="round" />
                 {pts.map((pt, i) => (
                   <circle key={i} cx={pt.x} cy={pt.y} r={isHovered ? 4.5 : 3} fill={pal.stroke} stroke="var(--paper-card)" strokeWidth={1.5} className="data-dot">
-                    <title>{people[pi].name} — {items[i].name}: {cells[cellKey(people[pi].id, items[i].id)] || 0}/5</title>
+                    <title>{p.name} — {items[i].name}: {cells[cellKey(p.id, items[i].id)] || 0}/5</title>
                   </circle>
                 ))}
               </g>
@@ -262,97 +174,87 @@ function RadarChart({ people, items, cells, cellKey, hoveredPerson, setHoveredPe
   );
 }
 
-// ─── Spread Chart: lollipop showing range + individual dots per skill ───────
+// ─── Gap Analysis: person picker + butterfly chart ──────────────────────────
 
-function SpreadChart({ people, items, cells, cellKey }) {
-  const W = 900, H = Math.max(300, items.length * 44 + 60);
-  const PAD = { top: 20, right: 40, bottom: 20, left: 170 };
-  const plotW = W - PAD.left - PAD.right;
-  const rowH = items.length > 0 ? (H - PAD.top - PAD.bottom) / items.length : 40;
+function GapChart({ people, items, cells, cellKey }) {
+  const [leftId, setLeftId] = useState("avg");
+  const [rightId, setRightId] = useState(people.length > 0 ? String(people[0].id) : "avg");
+
+  if (people.length === 0 || items.length === 0) return <EmptyChart />;
+
+  // Default: first load pick person 1 left, person 2 or avg right
+  const getLeft = () => leftId === "avg" ? null : people.find((p) => String(p.id) === leftId);
+  const getRight = () => rightId === "avg" ? null : people.find((p) => String(p.id) === rightId);
+
+  const teamAvg = (skillId) => {
+    const levels = people.map((p) => cells[cellKey(p.id, skillId)] || 0).filter(Boolean);
+    return levels.length > 0 ? levels.reduce((a, b) => a + b, 0) / levels.length : 0;
+  };
+
+  const leftPerson = getLeft();
+  const rightPerson = getRight();
+  const leftLabel = leftPerson ? leftPerson.name : "Team average";
+  const rightLabel = rightPerson ? rightPerson.name : "Team average";
+  const leftLevel = (sId) => leftPerson ? (cells[cellKey(leftPerson.id, sId)] || 0) : teamAvg(sId);
+  const rightLevel = (sId) => rightPerson ? (cells[cellKey(rightPerson.id, sId)] || 0) : teamAvg(sId);
+
+  const pal1 = PALETTE[0], pal2 = PALETTE[1];
+
+  const W = 900, H = Math.max(280, items.length * 38 + 70);
+  const CENTER = W / 2;
+  const PAD = { top: 50, bottom: 20 };
+  const barMaxW = (W - 100) / 2 - 20;
+  const rowH = (H - PAD.top - PAD.bottom) / items.length;
   const maxLevel = 5;
-
-  if (items.length === 0) return <EmptyChart />;
-
-  const xScale = (v) => PAD.left + (v / maxLevel) * plotW;
 
   return (
     <div className="matrix-viz-wrap">
-      <PersonLegend people={people} hovered={null} onHover={() => {}} />
+      <div className="gap-picker">
+        <select className="input gap-select" value={leftId} onChange={(e) => setLeftId(e.target.value)}>
+          <option value="avg">Team average</option>
+          {people.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+        </select>
+        <span className="gap-vs">vs</span>
+        <select className="input gap-select" value={rightId} onChange={(e) => setRightId(e.target.value)}>
+          <option value="avg">Team average</option>
+          {people.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+        </select>
+      </div>
       <div className="matrix-viz-container">
         <svg viewBox={`0 0 ${W} ${H}`} className="matrix-svg">
-          {/* Vertical grid */}
-          {[1, 2, 3, 4, 5].map((lv) => (
-            <g key={lv}>
-              <line x1={xScale(lv)} y1={PAD.top} x2={xScale(lv)} y2={H - PAD.bottom} className="grid-line" />
-              <text x={xScale(lv)} y={PAD.top - 6} className="axis-label" textAnchor="middle">{lv}</text>
-            </g>
-          ))}
+          <line x1={CENTER} y1={PAD.top - 10} x2={CENTER} y2={H - PAD.bottom} stroke="var(--line)" strokeWidth={1} />
+
+          <text x={CENTER - barMaxW / 2} y={PAD.top - 16} className="axis-label" textAnchor="middle" style={{ fontSize: 11, fontWeight: 600, fill: pal1.stroke }}>{leftLabel}</text>
+          <text x={CENTER + barMaxW / 2} y={PAD.top - 16} className="axis-label" textAnchor="middle" style={{ fontSize: 11, fontWeight: 600, fill: pal2.stroke }}>{rightLabel}</text>
 
           {items.map((s, si) => {
             const cy = PAD.top + si * rowH + rowH / 2;
-            const levels = people.map((p) => cells[cellKey(p.id, s.id)] || 0);
-            const nonZero = levels.filter(Boolean);
-            const min = nonZero.length > 0 ? Math.min(...nonZero) : 0;
-            const max = nonZero.length > 0 ? Math.max(...nonZero) : 0;
-            const avg = nonZero.length > 0 ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0;
-            const spread = max - min;
+            const lv1 = leftLevel(s.id);
+            const lv2 = rightLevel(s.id);
+            const w1 = (lv1 / maxLevel) * barMaxW;
+            const w2 = (lv2 / maxLevel) * barMaxW;
+            const gap = Math.abs(lv1 - lv2);
 
             return (
               <g key={s.id}>
-                {/* Row background on hover */}
-                <rect x={PAD.left} y={cy - rowH / 2} width={plotW} height={rowH} fill="transparent" className="spread-row-bg" />
+                <rect x={0} y={cy - rowH / 2} width={W} height={rowH} fill="transparent" className="spread-row-bg" />
 
-                {/* Skill label */}
-                <text x={PAD.left - 12} y={cy + 4} className="axis-label" textAnchor="end" style={{ fontSize: 11, fontWeight: 500 }}>
-                  {s.name.length > 22 ? s.name.slice(0, 20) + "\u2026" : s.name}
+                <rect x={CENTER - w1} y={cy - 9} width={Math.max(w1, 0)} height={18} rx={4}
+                  fill={pal1.fill} stroke={pal1.stroke} strokeWidth={1.5} style={{ transition: "all 0.3s ease" }} />
+                {lv1 > 0 && <text x={CENTER - w1 - 6} y={cy + 4} fill={pal1.stroke} style={{ fontSize: 10, fontWeight: 700 }} textAnchor="end">{Number.isInteger(lv1) ? lv1 : lv1.toFixed(1)}</text>}
+
+                <rect x={CENTER} y={cy - 9} width={Math.max(w2, 0)} height={18} rx={4}
+                  fill={pal2.fill} stroke={pal2.stroke} strokeWidth={1.5} style={{ transition: "all 0.3s ease" }} />
+                {lv2 > 0 && <text x={CENTER + w2 + 6} y={cy + 4} fill={pal2.stroke} style={{ fontSize: 10, fontWeight: 700 }} textAnchor="start">{Number.isInteger(lv2) ? lv2 : lv2.toFixed(1)}</text>}
+
+                <text x={CENTER} y={cy + 4} className="axis-label" textAnchor="middle" style={{ fontSize: 9, fontWeight: 600, fill: "var(--ink-soft)" }}>
+                  {s.name.length > 18 ? s.name.slice(0, 16) + "\u2026" : s.name}
                 </text>
 
-                {/* Range bar (min to max) */}
-                {nonZero.length > 1 && (
-                  <rect
-                    x={xScale(min)} y={cy - 4}
-                    width={Math.max(xScale(max) - xScale(min), 2)} height={8}
-                    rx={4}
-                    fill={spread >= 3 ? "rgba(224,115,74,0.2)" : spread >= 2 ? "rgba(212,160,50,0.15)" : "rgba(108,123,255,0.1)"}
-                    stroke={spread >= 3 ? "rgba(224,115,74,0.4)" : spread >= 2 ? "rgba(212,160,50,0.3)" : "rgba(108,123,255,0.2)"}
-                    strokeWidth={1}
-                  />
-                )}
-
-                {/* Average marker */}
-                {avg > 0 && (
-                  <line x1={xScale(avg)} y1={cy - 10} x2={xScale(avg)} y2={cy + 10} stroke="var(--ink-mute)" strokeWidth={1.5} strokeDasharray="3 2" opacity={0.5} />
-                )}
-
-                {/* Person dots */}
-                {people.map((p, pi) => {
-                  const lvl = cells[cellKey(p.id, s.id)] || 0;
-                  if (lvl === 0) return null;
-                  const pal = PALETTE[pi % PALETTE.length];
-                  return (
-                    <circle
-                      key={p.id}
-                      cx={xScale(lvl)}
-                      cy={cy + (pi - (people.length - 1) / 2) * 3}
-                      r={5}
-                      fill={pal.stroke}
-                      stroke="var(--paper-card)"
-                      strokeWidth={2}
-                      className="data-dot"
-                      opacity={0.9}
-                    >
-                      <title>{p.name}: {LEVEL_LABELS[lvl]} ({lvl}/5)</title>
-                    </circle>
-                  );
-                })}
-
-                {/* Spread indicator on far right */}
-                {nonZero.length > 1 && (
-                  <text x={W - PAD.right + 8} y={cy + 4} style={{ fontSize: 9, fontWeight: 600 }}
-                    fill={spread >= 3 ? "#e0734a" : spread >= 2 ? "#d4a032" : "var(--ink-mute)"}
-                  >
-                    {spread > 0 ? `\u0394${spread}` : ""}
-                  </text>
+                {gap >= 2 && (
+                  <circle cx={W - 16} cy={cy} r={4} fill={gap >= 3 ? "#e0734a" : "#d4a032"} opacity={0.85}>
+                    <title>Gap: {gap.toFixed(1)} levels</title>
+                  </circle>
                 )}
               </g>
             );
@@ -363,103 +265,76 @@ function SpreadChart({ people, items, cells, cellKey }) {
   );
 }
 
-// ─── Gap Analysis Chart: butterfly/tornado showing who's strong where ───────
+// ─── Parallel Coordinates: vertical axes per skill, lines per person ────────
 
-function GapChart({ people, items, cells, cellKey }) {
-  if (people.length < 2) return <EmptyChart message="Need at least 2 people for gap analysis." />;
-
-  const W = 900, H = Math.max(300, items.length * 40 + 60);
-  const CENTER = W / 2;
-  const PAD = { top: 40, bottom: 20 };
-  const barMaxW = (W - 80) / 2 - 20;
-  const rowH = items.length > 0 ? (H - PAD.top - PAD.bottom) / items.length : 40;
+function ParallelChart({ people, items, cells, cellKey, hoveredPerson, setHoveredPerson }) {
+  const W = Math.max(700, items.length * 80 + 80);
+  const H = 380;
+  const PAD = { top: 40, right: 40, bottom: 60, left: 40 };
+  const plotH = H - PAD.top - PAD.bottom;
   const maxLevel = 5;
+  const n = items.length;
 
-  // Compare first two people (or selected vs team average)
-  const p1 = people[0], p2 = people[1];
-  const pal1 = PALETTE[0], pal2 = PALETTE[1];
+  if (n === 0) return <EmptyChart />;
+
+  const xStep = n > 1 ? (W - PAD.left - PAD.right) / (n - 1) : 0;
+  const yScale = (v) => PAD.top + plotH - (v / maxLevel) * plotH;
 
   return (
     <div className="matrix-viz-wrap">
-      <div className="viz-legend">
-        <span className="viz-legend-item">
-          <span className="viz-legend-dot" style={{ background: pal1.stroke }} />
-          {p1.name}
-        </span>
-        <span style={{ fontSize: 11, color: "var(--ink-mute)", padding: "0 8px" }}>vs</span>
-        <span className="viz-legend-item">
-          <span className="viz-legend-dot" style={{ background: pal2.stroke }} />
-          {p2.name}
-        </span>
-      </div>
+      <PersonLegend people={people} hovered={hoveredPerson} onHover={setHoveredPerson} />
       <div className="matrix-viz-container">
         <svg viewBox={`0 0 ${W} ${H}`} className="matrix-svg">
-          {/* Center axis */}
-          <line x1={CENTER} y1={PAD.top - 20} x2={CENTER} y2={H - PAD.bottom} stroke="var(--line)" strokeWidth={1} />
-
-          {/* Column headers */}
-          <text x={CENTER - barMaxW / 2} y={PAD.top - 8} className="axis-label" textAnchor="middle" style={{ fontSize: 11, fontWeight: 600 }}>
-            {p1.name}
-          </text>
-          <text x={CENTER + barMaxW / 2} y={PAD.top - 8} className="axis-label" textAnchor="middle" style={{ fontSize: 11, fontWeight: 600 }}>
-            {p2.name}
-          </text>
-
-          {items.map((s, si) => {
-            const cy = PAD.top + si * rowH + rowH / 2;
-            const lvl1 = cells[cellKey(p1.id, s.id)] || 0;
-            const lvl2 = cells[cellKey(p2.id, s.id)] || 0;
-            const w1 = (lvl1 / maxLevel) * barMaxW;
-            const w2 = (lvl2 / maxLevel) * barMaxW;
-            const gap = Math.abs(lvl1 - lvl2);
-
+          {/* Vertical axes */}
+          {items.map((s, i) => {
+            const x = PAD.left + i * xStep;
             return (
               <g key={s.id}>
-                <rect x={0} y={cy - rowH / 2} width={W} height={rowH} fill="transparent" className="spread-row-bg" />
-
-                {/* Left bar (person 1 — extends left from center) */}
-                <rect
-                  x={CENTER - w1} y={cy - 10}
-                  width={Math.max(w1, 0)} height={20}
-                  rx={4}
-                  fill={pal1.fill}
-                  stroke={pal1.stroke}
-                  strokeWidth={1.5}
-                  style={{ transition: "all 0.3s ease" }}
-                />
-                {lvl1 > 0 && (
-                  <text x={CENTER - w1 - 6} y={cy + 4} fill={pal1.stroke} style={{ fontSize: 11, fontWeight: 700 }} textAnchor="end">{lvl1}</text>
-                )}
-
-                {/* Right bar (person 2 — extends right from center) */}
-                <rect
-                  x={CENTER} y={cy - 10}
-                  width={Math.max(w2, 0)} height={20}
-                  rx={4}
-                  fill={pal2.fill}
-                  stroke={pal2.stroke}
-                  strokeWidth={1.5}
-                  style={{ transition: "all 0.3s ease" }}
-                />
-                {lvl2 > 0 && (
-                  <text x={CENTER + w2 + 6} y={cy + 4} fill={pal2.stroke} style={{ fontSize: 11, fontWeight: 700 }} textAnchor="start">{lvl2}</text>
-                )}
-
-                {/* Skill name at center */}
-                <text x={CENTER} y={cy + 4} className="axis-label" textAnchor="middle"
-                  style={{ fontSize: 10, fontWeight: 600, fill: "var(--ink-soft)" }}
+                <line x1={x} y1={PAD.top} x2={x} y2={PAD.top + plotH} stroke="var(--line)" strokeWidth={1} opacity={0.4} />
+                {[1, 2, 3, 4, 5].map((lv) => (
+                  <g key={lv}>
+                    <line x1={x - 3} y1={yScale(lv)} x2={x + 3} y2={yScale(lv)} stroke="var(--ink-mute)" strokeWidth={1} opacity={0.4} />
+                    {i === 0 && <text x={x - 10} y={yScale(lv) + 3} className="axis-label" textAnchor="end" style={{ fontSize: 9 }}>{lv}</text>}
+                  </g>
+                ))}
+                <text x={x} y={H - PAD.bottom + 18} className="axis-label" textAnchor="middle"
+                  style={{ fontSize: 9, fontWeight: 500 }}
+                  transform={n > 8 ? `rotate(-40, ${x}, ${H - PAD.bottom + 18})` : undefined}
                 >
-                  {s.name.length > 20 ? s.name.slice(0, 18) + "\u2026" : s.name}
+                  {s.name.length > 14 ? s.name.slice(0, 12) + "\u2026" : s.name}
                 </text>
+              </g>
+            );
+          })}
 
-                {/* Gap indicator */}
-                {gap >= 2 && (
-                  <circle cx={CENTER} cy={cy - rowH / 2 + 4} r={3}
-                    fill={gap >= 3 ? "#e0734a" : "#d4a032"} opacity={0.8}
-                  >
-                    <title>Gap of {gap} levels</title>
+          {/* Person lines */}
+          {people.map((p, pi) => {
+            const pal = PALETTE[pi % PALETTE.length];
+            const points = items.map((s, i) => ({
+              x: PAD.left + i * xStep,
+              y: yScale(cells[cellKey(p.id, s.id)] || 0),
+            }));
+            const isHovered = hoveredPerson === pi;
+            const isDimmed = hoveredPerson !== null && !isHovered;
+
+            // Smooth curve through points
+            const path = points.length === 1
+              ? `M${points[0].x},${points[0].y}`
+              : points.map((pt, i) => {
+                  if (i === 0) return `M${pt.x},${pt.y}`;
+                  const prev = points[i - 1];
+                  const cpx = (prev.x + pt.x) / 2;
+                  return `C${cpx},${prev.y} ${cpx},${pt.y} ${pt.x},${pt.y}`;
+                }).join(" ");
+
+            return (
+              <g key={pi} style={{ opacity: isDimmed ? 0.1 : 1, transition: "opacity 0.2s ease" }}>
+                <path d={path} fill="none" stroke={pal.stroke} strokeWidth={isHovered ? 3 : 2} strokeLinecap="round" />
+                {points.map((pt, i) => (
+                  <circle key={i} cx={pt.x} cy={pt.y} r={isHovered ? 5 : 3.5} fill={pal.stroke} stroke="var(--paper-card)" strokeWidth={2} className="data-dot">
+                    <title>{p.name} — {items[i].name}: {cells[cellKey(p.id, items[i].id)] || 0}/5</title>
                   </circle>
-                )}
+                ))}
               </g>
             );
           })}
@@ -478,11 +353,8 @@ function PersonLegend({ people, hovered, onHover }) {
         const pal = PALETTE[i % PALETTE.length];
         const isActive = hovered === null || hovered === i;
         return (
-          <button
-            key={p.id}
-            className={`viz-legend-item ${isActive ? "" : "dimmed"}`}
-            onMouseEnter={() => onHover(i)}
-            onMouseLeave={() => onHover(null)}
+          <button key={p.id} className={`viz-legend-item ${isActive ? "" : "dimmed"}`}
+            onMouseEnter={() => onHover(i)} onMouseLeave={() => onHover(null)}
             onClick={() => onHover(hovered === i ? null : i)}
           >
             <span className="viz-legend-dot" style={{ background: pal.stroke }} />
@@ -499,56 +371,6 @@ function EmptyChart({ message }) {
   return (
     <div className="card" style={{ textAlign: "center", padding: 56, color: "var(--ink-mute)" }}>
       {message || "Add some data to see the visualization."}
-    </div>
-  );
-}
-
-// ─── Editor ─────────────────────────────────────────────────────────────────
-
-function ProficiencyEditor({ editing, source, onClose, onSaved }) {
-  const [level, setLevel] = useState(editing.current || 3);
-  const [busy, setBusy] = useState(false);
-  const save = async () => {
-    setBusy(true);
-    try {
-      if (source === "skills") {
-        await api.setProficiency({ user_id: editing.person.id, skill_id: editing.item.id, level });
-      } else {
-        await api.setDomainProf({ user_id: editing.person.id, domain_id: editing.item.id, level });
-      }
-      onSaved();
-    } catch { setBusy(false); }
-  };
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>{editing.item.name}</h2>
-        <p className="lede">Set {editing.person.name}'s proficiency.</p>
-        <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
-          {[1, 2, 3, 4, 5].map((lv) => (
-            <button
-              key={lv}
-              onClick={() => setLevel(lv)}
-              className={`matrix-cell l${lv}`}
-              style={{
-                width: 64, height: 64, fontSize: 18, fontWeight: 700,
-                outline: level === lv ? `3px solid var(--accent)` : "none",
-                outlineOffset: 3,
-              }}
-            >
-              {lv}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          <span>Novice</span><span>Expert</span>
-        </div>
-        <div className="actions">
-          <button className="btn ghost small" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="btn small" onClick={save} disabled={busy}>{busy ? "Saving\u2026" : "Save"}</button>
-        </div>
-      </div>
     </div>
   );
 }
