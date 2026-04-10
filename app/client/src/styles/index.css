@@ -649,6 +649,110 @@ input, textarea, select { font-family: inherit; }
 .matrix-legend .swatch-row { display: flex; gap: 4px; align-items: center; }
 .matrix-legend .swatch { width: 18px; height: 18px; border-radius: 5px; }
 
+/* ─── Matrix: Chart view ─── */
+
+.matrix-chart { padding: 16px 0; }
+.matrix-chart-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.chart-person-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+.chart-person-chip {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--ink-soft);
+  padding: 3px 10px; border-radius: 999px;
+  border: 1px solid; background: var(--paper-card);
+}
+.chart-person-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* By-skill: horizontal bars */
+.chart-skill-rows { display: flex; flex-direction: column; gap: 6px; }
+.chart-skill-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.chart-skill-info { width: 180px; flex-shrink: 0; }
+.chart-skill-name { font-size: 13px; font-weight: 600; display: block; }
+.chart-skill-domain { font-size: 10px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.chart-skill-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.chart-h-bar {
+  height: 20px; position: relative; border-radius: 4px;
+  background: var(--paper-warm); overflow: hidden;
+}
+.chart-h-bar-fill {
+  height: 100%; border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 0;
+}
+.chart-h-bar-value {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 10px; font-weight: 700; color: var(--ink-soft);
+}
+
+/* By-person: vertical bars */
+.chart-rows { display: flex; flex-direction: column; gap: 32px; }
+.chart-group {}
+.chart-group-label { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.chart-bars { display: flex; gap: 4px; align-items: flex-end; height: 140px; }
+.chart-bar-wrap {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  height: 100%; min-width: 0;
+}
+.chart-bar-track {
+  flex: 1; width: 100%; max-width: 32px;
+  background: var(--paper-warm); border-radius: 4px 4px 0 0;
+  display: flex; align-items: flex-end; overflow: hidden;
+}
+.chart-bar-fill {
+  width: 100%; border-radius: 4px 4px 0 0;
+  transition: height 0.4s ease;
+}
+.chart-bar-fill.l1 { background: var(--warm-1); }
+.chart-bar-fill.l2 { background: var(--warm-2); }
+.chart-bar-fill.l3 { background: var(--warm-3); }
+.chart-bar-fill.l4 { background: var(--warm-4); }
+.chart-bar-fill.l5 { background: var(--warm-5); }
+.chart-bar-label {
+  font-size: 9px; color: var(--ink-mute); margin-top: 6px;
+  writing-mode: vertical-lr; transform: rotate(180deg);
+  max-height: 60px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Matrix: Heatmap view ─── */
+
+.matrix-heatmap { padding: 8px 0; }
+.heatmap-scroll { overflow-x: auto; }
+.heatmap-table { border-collapse: separate; border-spacing: 3px; width: 100%; }
+.heatmap-table th {
+  padding: 4px; text-align: center; vertical-align: bottom;
+}
+.heatmap-skill-label {
+  font-size: 10px; font-weight: 600; color: var(--ink-soft);
+  writing-mode: vertical-lr; transform: rotate(180deg);
+  display: inline-block; max-height: 100px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.heatmap-person {
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  padding: 4px 12px 4px 4px; text-align: left;
+}
+.heatmap-cell {
+  width: 36px; height: 36px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600;
+  transition: transform 0.12s ease;
+}
+.heatmap-cell.empty { background: var(--paper-warm); color: transparent; }
+.heatmap-cell.l1 { background: var(--warm-1); color: var(--warm-5); }
+.heatmap-cell.l2 { background: var(--warm-2); color: var(--warm-5); }
+.heatmap-cell.l3 { background: var(--warm-3); color: #fff; }
+.heatmap-cell.l4 { background: var(--warm-4); color: #fff; }
+.heatmap-cell.l5 { background: var(--warm-5); color: var(--warm-1); }
+.heatmap-cell:hover { transform: scale(1.15); z-index: 2; }
+.heatmap-avg-row td { border-top: 2px solid var(--line); }
+
 /* Domain colors (used by matrix header bars and pills) */
 .domain-databases  { --d: #c8956d; }
 .domain-cloud      { --d: #6d8bb8; }
