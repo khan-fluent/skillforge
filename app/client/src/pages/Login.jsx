@@ -1,13 +1,20 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { api } from "../lib/api.js";
 
 export default function Login() {
   const { login } = useAuth();
   const nav = useNavigate();
+  const [params] = useSearchParams();
   const [form, setForm] = useState({ email: "", password: "" });
-  const [err, setErr] = useState("");
+  const [err, setErr] = useState(params.get("error") || "");
   const [busy, setBusy] = useState(false);
+  const [authMethod, setAuthMethod] = useState(null);
+
+  useEffect(() => {
+    api.authProviders().then((p) => setAuthMethod(p)).catch(() => {});
+  }, []);
 
   const change = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const submit = async (e) => {
@@ -17,6 +24,8 @@ export default function Login() {
     catch (e) { setErr(e.message); }
     finally { setBusy(false); }
   };
+
+  const ssoEnabled = authMethod?.sso;
 
   return (
     <div className="auth-shell">
@@ -32,6 +41,16 @@ export default function Login() {
           <h1>Sign in</h1>
           <p className="lede">Pick up where you left off.</p>
           {err && <div className="error">{err}</div>}
+
+          {ssoEnabled && (
+            <>
+              <a href="/api/auth/sso" className="btn submit sso-btn">
+                Sign in with SSO
+              </a>
+              <div className="divider"><span>or sign in with email</span></div>
+            </>
+          )}
+
           <div className="field">
             <label className="label">Email</label>
             <input className="input" type="email" value={form.email} onChange={change("email")} required />
@@ -40,7 +59,7 @@ export default function Login() {
             <label className="label">Password</label>
             <input className="input" type="password" value={form.password} onChange={change("password")} required />
           </div>
-          <button className="btn submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+          <button className="btn submit" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</button>
           <div className="alt">No team yet? <Link to="/signup">Create one</Link></div>
         </form>
       </main>

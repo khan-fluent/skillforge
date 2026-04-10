@@ -100,6 +100,10 @@ ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS description  TEXT;
 ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_key  VARCHAR(50);
 ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_name VARCHAR(200);
 
+-- SSO support: link external identity to local user
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_provider VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_subject  VARCHAR(500);
+
 CREATE INDEX IF NOT EXISTS idx_jira_issues_team_date ON jira_issues(team_id, snapshot_date DESC);
 CREATE INDEX IF NOT EXISTS idx_jira_issues_assignee  ON jira_issues(team_id, assignee_email);
 

@@ -24,6 +24,7 @@ services:
       DB_PASSWORD: skillforge
       LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AUTH_METHOD: ${AUTH_METHOD:-local}
     depends_on:
       - db
 

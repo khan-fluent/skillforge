@@ -26,6 +26,7 @@ export const api = {
   accept:  (data) => request("/auth/accept", { method: "POST", body: JSON.stringify(data) }),
   invite:  (token) => request(`/auth/invite/${token}`),
   me:      () => request("/auth/me"),
+  authProviders: () => request("/auth/providers"),
 
   // team
   team:       () => request("/team"),

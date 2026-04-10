@@ -110,6 +110,7 @@ module "ecs_service" {
     { name = "DB_PORT", value = data.aws_ssm_parameter.rds_port.value },
     { name = "DB_NAME", value = "skillforge" },
     { name = "DB_USERNAME", value = data.aws_ssm_parameter.rds_username.value },
+    { name = "AUTH_METHOD", value = var.auth_method },
   ]
 
   secrets = [

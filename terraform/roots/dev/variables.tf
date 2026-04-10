@@ -10,6 +10,12 @@ variable "llm_provider" {
   default     = "anthropic"
 }
 
+variable "auth_method" {
+  description = "Authentication method: local, oidc, or saml"
+  type        = string
+  default     = "local"
+}
+
 variable "anthropic_api_key" {
   description = "Anthropic API key for Claude"
   type        = string

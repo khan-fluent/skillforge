@@ -394,6 +394,32 @@ input, textarea, select { font-family: inherit; }
   font-size: 13px;
   margin-bottom: 18px;
 }
+.auth-form .sso-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  background: var(--surface-2, #f0f1f5);
+  color: var(--ink, #1a1a2e);
+  border: 1px solid var(--border, #d5d7e0);
+}
+.auth-form .sso-btn:hover { background: var(--surface-3, #e4e5ec); }
+.auth-form .divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--ink-mute);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.auth-form .divider::before,
+.auth-form .divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border, #d5d7e0);
+}
 
 @media (max-width: 900px) {
   .auth-shell { grid-template-columns: 1fr; }

@@ -5,6 +5,7 @@ import Landing from "./pages/Landing.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Accept from "./pages/Accept.jsx";
+import SSOCallback from "./pages/SSOCallback.jsx";
 
 import Shell from "./components/Shell.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
       <Route path="/accept/:token" element={<Accept />} />
+      <Route path="/sso-callback" element={<SSOCallback />} />
 
       {/* App (signed-in) */}
       <Route path="/app" element={<Protected><Shell /></Protected>}>

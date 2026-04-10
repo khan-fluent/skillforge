@@ -6,6 +6,24 @@ import requireAuth, { generateToken } from "../middleware/auth.js";
 
 const router = Router();
 
+const AUTH_METHOD = (process.env.AUTH_METHOD || "local").toLowerCase();
+
+// ---------------------------------------------------------------------------
+// GET /auth/providers — tells the frontend which login methods are available
+// ---------------------------------------------------------------------------
+router.get("/providers", (_req, res) => {
+  res.json({
+    method: AUTH_METHOD,
+    local: AUTH_METHOD === "local",
+    sso: AUTH_METHOD === "oidc" || AUTH_METHOD === "saml",
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Local auth (signup / login / invite-accept) — always registered so admins
+// can still sign in even when SSO is configured.
+// ---------------------------------------------------------------------------
+
 // Sign up = create a brand new team. The signing-up user becomes the team admin.
 // This is the only way new teams enter the system.
 router.post("/signup", async (req, res) => {
@@ -116,6 +134,125 @@ router.get("/me", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch session" });
   }
 });
+
+// ---------------------------------------------------------------------------
+// SSO routes — only active when AUTH_METHOD is oidc or saml
+// ---------------------------------------------------------------------------
+
+// GET /auth/sso — redirects the browser to the IdP
+router.get("/sso", async (req, res) => {
+  try {
+    const ssoService = await loadSSOService();
+    const { url, state } = await ssoService.getAuthorizationUrl();
+
+    // Store state in a short-lived cookie for OIDC CSRF protection
+    if (state) {
+      res.cookie("sso_state", state, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 300_000, // 5 min
+      });
+    }
+
+    res.redirect(url);
+  } catch (err) {
+    console.error("SSO initiation failed:", err.message);
+    res.redirect(`/login?error=${encodeURIComponent("SSO configuration error. Contact your admin.")}`);
+  }
+});
+
+// GET/POST /auth/sso/callback — IdP redirects back here
+router.get("/sso/callback", handleSSOCallback);
+router.post("/sso/callback", handleSSOCallback);
+
+async function handleSSOCallback(req, res) {
+  try {
+    const ssoService = await loadSSOService();
+    let ssoUser;
+
+    if (AUTH_METHOD === "oidc") {
+      const state = req.cookies?.sso_state || req.query?.state;
+      const callbackUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+      ssoUser = await ssoService.handleCallback(callbackUrl, state);
+      res.clearCookie("sso_state");
+    } else {
+      // SAML: assertion comes in the POST body
+      ssoUser = await ssoService.handleCallback(req.body);
+    }
+
+    // JIT provision or match existing user
+    const user = await provisionSSOUser(ssoUser);
+    const jwt = generateToken(user);
+
+    // Redirect to frontend with token in URL — SSOCallback page picks it up
+    res.redirect(`/sso-callback?token=${jwt}`);
+  } catch (err) {
+    console.error("SSO callback failed:", err.message);
+    res.redirect(`/login?error=${encodeURIComponent("SSO authentication failed. Please try again.")}`);
+  }
+}
+
+/**
+ * JIT user provisioning for SSO.
+ *
+ * 1. If a user with this email already exists → update SSO fields, return user
+ * 2. If SSO_AUTO_CREATE_USERS is true and SSO_DEFAULT_TEAM_ID is set → create user
+ * 3. Otherwise → reject (admin must pre-invite the user)
+ */
+async function provisionSSOUser({ email, name, subject, provider }) {
+  const normalizedEmail = email.toLowerCase();
+
+  // Check if user already exists (by email)
+  const { rows: existing } = await query(
+    "SELECT * FROM users WHERE email = $1",
+    [normalizedEmail]
+  );
+
+  if (existing.length > 0) {
+    // Link SSO identity if not already linked
+    if (!existing[0].sso_provider) {
+      await query(
+        "UPDATE users SET sso_provider = $1, sso_subject = $2, accepted_at = COALESCE(accepted_at, NOW()) WHERE id = $3",
+        [provider, subject, existing[0].id]
+      );
+    }
+    return existing[0];
+  }
+
+  // User doesn't exist — check if auto-creation is enabled
+  const autoCreate = process.env.SSO_AUTO_CREATE_USERS === "true";
+  const defaultTeamId = process.env.SSO_DEFAULT_TEAM_ID;
+
+  if (!autoCreate || !defaultTeamId) {
+    throw new Error(
+      "Your account has not been provisioned. Ask your team admin to invite you first."
+    );
+  }
+
+  // Create user in the default team
+  const { rows: created } = await query(
+    `INSERT INTO users (team_id, name, email, role, sso_provider, sso_subject, accepted_at)
+     VALUES ($1, $2, $3, 'member', $4, $5, NOW())
+     RETURNING id, team_id, name, email, role, job_title, accepted_at`,
+    [defaultTeamId, name, normalizedEmail, provider, subject]
+  );
+
+  return created[0];
+}
+
+/**
+ * Dynamically load the correct SSO service based on AUTH_METHOD.
+ */
+async function loadSSOService() {
+  if (AUTH_METHOD === "oidc") {
+    return import("../services/auth/oidc.js");
+  }
+  if (AUTH_METHOD === "saml") {
+    return import("../services/auth/saml.js");
+  }
+  throw new Error(`SSO is not enabled. AUTH_METHOD is "${AUTH_METHOD}".`);
+}
 
 export default router;
 
