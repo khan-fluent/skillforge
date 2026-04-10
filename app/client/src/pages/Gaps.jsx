@@ -45,7 +45,7 @@ export default function Gaps() {
       <div className="page-hd">
         <div>
           <h1>Knowledge gaps</h1>
-          <p>Bus-factor analysis — find and fix single points of failure.</p>
+          <p>Bus-factor analysis — how many people are <strong>proficient (level 4+)</strong> in each skill. Lower = riskier.</p>
         </div>
       </div>
 
@@ -190,9 +190,9 @@ function RiskChart({ items, selected, onSelect }) {
 
       {/* Legend */}
       <div className="risk-chart-legend">
-        <span><span className="risk-legend-bar" style={{ background: "rgba(91,138,91,0.45)" }} /> Proficient</span>
+        <span><span className="risk-legend-bar" style={{ background: "rgba(91,138,91,0.45)" }} /> Proficient (level 4+)</span>
         <span><span className="risk-legend-bar" style={{ background: "rgba(91,138,91,0.08)" }} /> Known (any level)</span>
-        <span style={{ marginLeft: "auto", color: "var(--ink-mute)", fontSize: 11 }}>Click any row for details</span>
+        <span style={{ marginLeft: "auto", color: "var(--ink-mute)", fontSize: 11 }}>Bus factor = count of people at level 4+</span>
       </div>
     </div>
   );
@@ -222,11 +222,11 @@ function DetailPanel({ item: s, source, onClose }) {
         </div>
         <div className="detail-metric">
           <div className="serif detail-metric-value">{s.total_known}</div>
-          <div className="detail-metric-label">Know it</div>
+          <div className="detail-metric-label">Total people</div>
         </div>
         <div className="detail-metric">
           <div className="serif detail-metric-value">{pct}%</div>
-          <div className="detail-metric-label">Proficient</div>
+          <div className="detail-metric-label">At level 4+</div>
         </div>
       </div>
 
@@ -246,22 +246,25 @@ function DetailPanel({ item: s, source, onClose }) {
       <div className="detail-insight">
         {s.bus_factor === 0 && (
           <div className="detail-insight-text bad">
-            <strong>Action needed:</strong> Nobody on the team is proficient in {s.name}. Consider cross-training or hiring.
+            <strong>Action needed:</strong> Nobody is rated level 4+ (Proficient/Expert) in {s.name}.
+            {s.total_known > 0
+              ? ` ${s.total_known} ${s.total_known === 1 ? "person knows" : "people know"} it at a lower level \u2014 upskill them to close this gap.`
+              : " Consider cross-training or hiring."}
           </div>
         )}
         {s.bus_factor === 1 && (
           <div className="detail-insight-text warn">
-            <strong>Risk:</strong> Only <strong>{s.proficient_people?.[0]}</strong> is proficient. If they're unavailable, the team has a gap.
+            <strong>Single point of failure:</strong> Only <strong>{s.proficient_people?.[0]}</strong> is at level 4+. If they're unavailable, the team loses this capability.
           </div>
         )}
         {s.bus_factor >= 2 && (
           <div className="detail-insight-text good">
-            <strong>Healthy:</strong> {s.bus_factor} people are proficient in {s.name}. No immediate risk.
+            <strong>Healthy:</strong> {s.bus_factor} people are at level 4+ in {s.name}. No immediate risk.
           </div>
         )}
-        {s.total_known > s.bus_factor && (
+        {s.total_known > s.bus_factor && s.bus_factor > 0 && (
           <div className="detail-insight-sub">
-            {s.total_known - s.bus_factor} other{s.total_known - s.bus_factor > 1 ? "s" : ""} know this at a lower level — upskilling candidates.
+            {s.total_known - s.bus_factor} other{s.total_known - s.bus_factor > 1 ? "s" : ""} know this below level 4 \u2014 potential upskilling candidates.
           </div>
         )}
       </div>
