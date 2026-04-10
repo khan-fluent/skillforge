@@ -24,12 +24,12 @@
   --accent-soft:  #eef0ff;
   --accent-ring:  rgba(77, 101, 255, 0.25);
 
-  /* Warm secondary accents — only used for proficiency, status pills */
-  --warm-1:       #f5e6d3;  /* parchment */
-  --warm-2:       #e8c896;  /* honey */
-  --warm-3:       #c8956d;  /* terracotta */
-  --warm-4:       #8b5a3c;  /* cedar */
-  --warm-5:       #4a2f1f;  /* espresso */
+  /* Proficiency scale — cool grey to slate */
+  --warm-1:       #e0e2e8;  /* mist */
+  --warm-2:       #b8bcc8;  /* silver */
+  --warm-3:       #7d8594;  /* stone */
+  --warm-4:       #4e5669;  /* slate */
+  --warm-5:       #2b3245;  /* charcoal */
 
   --good:         #5b8a5b;
   --warn:         #b8862e;
@@ -63,11 +63,11 @@
   --accent-soft:  rgba(123, 144, 255, 0.12);
   --accent-ring:  rgba(123, 144, 255, 0.3);
 
-  --warm-1:       #2a2520;
-  --warm-2:       #3d3225;
-  --warm-3:       #5c4232;
-  --warm-4:       #8b5a3c;
-  --warm-5:       #d4a878;
+  --warm-1:       #282b33;
+  --warm-2:       #3a3f4d;
+  --warm-3:       #5a6275;
+  --warm-4:       #8490a8;
+  --warm-5:       #b4bdd2;
 
   --good:         #6aad6a;
   --warn:         #d4a032;
@@ -759,7 +759,7 @@ input, textarea, select { font-family: inherit; }
   cursor: pointer; transition: all 0.15s ease;
   position: relative;
 }
-.prof-seg:hover { border-color: var(--warm-3); background: rgba(200, 149, 109, 0.15); }
+.prof-seg:hover { border-color: var(--warm-3); background: rgba(125, 133, 148, 0.15); }
 .prof-seg.filled { border-color: transparent; }
 .prof-seg.filled:nth-child(1) { background: var(--warm-1); }
 .prof-seg.filled:nth-child(2) { background: var(--warm-2); }
@@ -767,7 +767,7 @@ input, textarea, select { font-family: inherit; }
 .prof-seg.filled:nth-child(4) { background: var(--warm-4); }
 .prof-seg.filled:nth-child(5) { background: var(--warm-5); }
 .prof-seg.filled.edge {
-  box-shadow: 0 0 0 2px rgba(200, 149, 109, 0.35);
+  box-shadow: 0 0 0 2px rgba(125, 133, 148, 0.35);
 }
 .prof-level-label {
   font-size: 11px; color: var(--ink-mute); min-width: 60px;
