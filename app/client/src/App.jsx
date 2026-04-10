@@ -16,6 +16,7 @@ import Gaps from "./pages/Gaps.jsx";
 import Certifications from "./pages/Certifications.jsx";
 import Chat from "./pages/Chat.jsx";
 import KnowledgeBase from "./pages/KnowledgeBase.jsx";
+import Domains from "./pages/Domains.jsx";
 import Settings from "./pages/Settings.jsx";
 
 function Protected({ children }) {
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="skills" element={<Skills />} />
         <Route path="gaps" element={<Gaps />} />
         <Route path="certifications" element={<Certifications />} />
+        <Route path="domains" element={<Domains />} />
         <Route path="chat" element={<Chat />} />
         <Route path="kb" element={<KnowledgeBase />} />
         <Route path="settings" element={<Settings />} />

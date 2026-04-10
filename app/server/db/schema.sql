@@ -139,6 +139,32 @@ CREATE INDEX IF NOT EXISTS idx_kb_documents_team   ON kb_documents(team_id);
 CREATE INDEX IF NOT EXISTS idx_kb_documents_folder ON kb_documents(folder_id);
 CREATE INDEX IF NOT EXISTS idx_kb_doc_skills_skill ON kb_document_skills(skill_id);
 
+-- Business domains: products, business units, internal systems, etc.
+-- Same proficiency model as skills (1-5 scale) for org-level knowledge mapping.
+CREATE TABLE IF NOT EXISTS domains (
+  id          SERIAL PRIMARY KEY,
+  team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  name        VARCHAR(200) NOT NULL,
+  category    VARCHAR(100) NOT NULL DEFAULT 'general',
+  description TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(team_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS domain_proficiencies (
+  id          SERIAL PRIMARY KEY,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  domain_id   INTEGER NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
+  level       SMALLINT NOT NULL CHECK (level BETWEEN 1 AND 5),
+  notes       TEXT,
+  updated_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, domain_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_domains_team              ON domains(team_id);
+CREATE INDEX IF NOT EXISTS idx_domain_proficiencies_user ON domain_proficiencies(user_id);
+CREATE INDEX IF NOT EXISTS idx_domain_proficiencies_dom  ON domain_proficiencies(domain_id);
+
 CREATE INDEX IF NOT EXISTS idx_users_team           ON users(team_id);
 CREATE INDEX IF NOT EXISTS idx_users_invite_token   ON users(invite_token) WHERE invite_token IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_skills_team          ON skills(team_id);

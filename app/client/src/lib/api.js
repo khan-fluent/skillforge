@@ -72,6 +72,14 @@ export const api = {
   kbStats:         () => request("/kb/stats"),
   kbBySkill:       (skillId) => request(`/kb/by-skill/${skillId}`),
 
+  // domains
+  domains:           () => request("/domains"),
+  createDomain:      (data) => request("/domains", { method: "POST", body: JSON.stringify(data) }),
+  deleteDomain:      (id) => request(`/domains/${id}`, { method: "DELETE" }),
+  setDomainProf:     (data) => request("/domains/proficiencies", { method: "POST", body: JSON.stringify(data) }),
+  domainGaps:        () => request("/domains/gaps"),
+  domainMatrix:      () => request("/domains/matrix"),
+
   // jira / tickets
   jiraSummary:    () => request("/jira/summary"),
   jiraConnection: () => request("/jira/connection"),

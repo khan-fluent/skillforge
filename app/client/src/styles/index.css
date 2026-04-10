@@ -474,6 +474,33 @@ input, textarea, select { font-family: inherit; }
 .shell-side nav a:hover { background: rgba(255, 255, 255, 0.6); color: var(--ink); }
 .shell-side nav a.active { background: var(--paper-card); color: var(--ink); box-shadow: var(--shadow-sm); }
 .shell-side nav a .icon { font-size: 15px; width: 18px; opacity: 0.7; }
+
+/* Collapsible nav sections */
+.nav-section { margin: 0; }
+.nav-section-toggle {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; width: 100%;
+  border-radius: var(--r-md); border: none; background: transparent;
+  color: var(--ink-soft); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
+  text-align: left;
+}
+.nav-section-toggle:hover { background: rgba(255, 255, 255, 0.6); color: var(--ink); }
+.nav-section-toggle .icon { font-size: 15px; width: 18px; opacity: 0.7; }
+.nav-section.has-active > .nav-section-toggle { color: var(--ink); font-weight: 600; }
+.nav-chevron {
+  margin-left: auto; font-size: 11px; opacity: 0.5;
+  transition: transform 0.15s ease;
+}
+.nav-chevron.open { transform: rotate(90deg); }
+.nav-section-children {
+  display: flex; flex-direction: column; gap: 1px;
+  margin-left: 30px; padding: 2px 0 4px;
+}
+.nav-section-children a {
+  padding: 7px 14px;
+  font-size: 13px;
+}
 .shell-side .me {
   margin-top: auto;
   padding: 16px;
@@ -828,6 +855,61 @@ input, textarea, select { font-family: inherit; }
   .gaps-pills { order: 1; width: 100%; }
   .gaps-view-toggle { order: 2; }
 }
+
+/* ─────────── Domains ─────────── */
+
+.domains-topbar {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 24px; flex-wrap: wrap;
+}
+.domains-summary { display: flex; gap: 8px; }
+.domains-add-form { margin-bottom: 24px; }
+.domains-add-row { display: flex; gap: 10px; }
+.domains-add-row .input { flex: 1; }
+.domains-add-row select.input { max-width: 180px; }
+.domains-group { margin-bottom: 28px; }
+.domains-group-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ink-mute); font-weight: 600; margin-bottom: 10px;
+  padding-left: 4px;
+}
+.domains-list { display: flex; flex-direction: column; gap: 2px; }
+.domain-row-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px;
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  transition: background 0.12s ease;
+}
+.domain-row-item:hover { background: var(--paper-warm); }
+.domain-row-info { flex: 1; min-width: 0; }
+.domain-row-name { font-size: 15px; font-weight: 600; }
+.domain-row-desc { font-size: 12px; color: var(--ink-mute); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.domain-row-stats { display: flex; align-items: center; gap: 24px; }
+.domain-row-stat { text-align: center; }
+.domain-row-stat-value { font-family: "Instrument Serif", serif; font-size: 22px; line-height: 1; letter-spacing: -0.02em; display: block; }
+.domain-row-stat-label { font-size: 10px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.04em; }
+.domain-row-rating { display: flex; gap: 4px; }
+.rating-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--line); background: transparent;
+  font-size: 11px; font-weight: 600; color: var(--ink-mute);
+  cursor: pointer; transition: all 0.12s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.rating-dot:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.rating-dot.filled { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Gap analysis view */
+.domain-row-gap { display: flex; align-items: center; gap: 16px; }
+.domain-row-bf { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+.domain-row-bf .serif { font-size: 28px; line-height: 1; }
+.domain-row-bf-label { font-size: 9px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.06em; }
+.domain-row-bar-wrap { width: 120px; }
+.domain-row-bar { height: 6px; border-radius: 999px; background: var(--paper-warm); overflow: hidden; }
+.domain-row-bar > div { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+.domain-row-bar-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--ink-mute); margin-top: 3px; }
 
 /* ─────────── Modal ─────────── */
 
