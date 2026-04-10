@@ -100,6 +100,27 @@ ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS description  TEXT;
 ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_key  VARCHAR(50);
 ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_name VARCHAR(200);
 
+-- Chat session history
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  id          SERIAL PRIMARY KEY,
+  team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title       VARCHAR(300),
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id          SERIAL PRIMARY KEY,
+  session_id  INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  role        VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+  content     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id);
+
 -- SSO support: link external identity to local user
 ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_provider VARCHAR(50);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_subject  VARCHAR(500);

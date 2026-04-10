@@ -23,6 +23,7 @@ import chatRouter from "./routes/chat.js";
 import jiraRouter from "./routes/jira.js";
 import kbRouter from "./routes/kb.js";
 import domainsRouter from "./routes/domains.js";
+import insightsRouter from "./routes/insights.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -48,6 +49,7 @@ app.use("/api/chat", chatRouter);
 app.use("/api/jira", jiraRouter);
 app.use("/api/kb", kbRouter);
 app.use("/api/domains", domainsRouter);
+app.use("/api/insights", insightsRouter);
 
 if (process.env.NODE_ENV === "production") {
   const clientDist = join(__dirname, "public");

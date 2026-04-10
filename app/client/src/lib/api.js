@@ -58,7 +58,12 @@ export const api = {
   createCert:     (data) => request("/certifications", { method: "POST", body: JSON.stringify(data) }),
   updateCert:     (id, data) => request(`/certifications/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteCert:     (id) => request(`/certifications/${id}`, { method: "DELETE" }),
-  chat:           (messages) => request("/chat", { method: "POST", body: JSON.stringify({ messages }) }),
+  chat:           (messages, sessionId) => request("/chat", { method: "POST", body: JSON.stringify({ messages, session_id: sessionId }) }),
+  chatSessions:   () => request("/chat/sessions"),
+  createSession:  (title) => request("/chat/sessions", { method: "POST", body: JSON.stringify({ title }) }),
+  getSession:     (id) => request(`/chat/sessions/${id}`),
+  updateSession:  (id, data) => request(`/chat/sessions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteSession:  (id) => request(`/chat/sessions/${id}`, { method: "DELETE" }),
 
   // knowledge base
   kbFolders:       () => request("/kb/folders"),
@@ -82,6 +87,9 @@ export const api = {
   setDomainProf:     (data) => request("/domains/proficiencies", { method: "POST", body: JSON.stringify(data) }),
   domainGaps:        () => request("/domains/gaps"),
   domainMatrix:      () => request("/domains/matrix"),
+
+  // insights
+  insights:        () => request("/insights"),
 
   // jira / tickets
   jiraSummary:    () => request("/jira/summary"),
