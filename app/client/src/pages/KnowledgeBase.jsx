@@ -11,7 +11,7 @@ export default function KnowledgeBase() {
   const [docs, setDocs] = useState([]);
   const [skills, setSkills] = useState([]);
   const [stats, setStats] = useState(null);
-  const [activeFolder, setActiveFolder] = useState(null); // null = all, "unfiled" = no folder, or folder id
+  const [activeFolder, setActiveFolder] = useState(null); // null = all, or folder id
   const [activeDoc, setActiveDoc] = useState(null);
   const [editing, setEditing] = useState(false);
   const [search, setSearch] = useState("");
@@ -46,7 +46,7 @@ export default function KnowledgeBase() {
   };
 
   const isAdmin = user.role === "admin";
-  const folderName = (id) => folders.find((f) => f.id === id)?.name || "Unfiled";
+  const folderName = (id) => folders.find((f) => f.id === id)?.name || "";
   const storagePercent = stats ? Math.round((stats.storage_used / stats.storage_limit) * 100) : 0;
 
   return (
@@ -58,7 +58,10 @@ export default function KnowledgeBase() {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn ghost" onClick={() => setShowNewFolder(true)}>New folder</button>
-          <button className="btn" onClick={() => setShowNewDoc(true)}>New document</button>
+          <button className="btn" onClick={() => {
+            if (folders.length === 0) { setShowNewFolder(true); return; }
+            setShowNewDoc(true);
+          }}>New document</button>
         </div>
       </div>
 
@@ -81,19 +84,13 @@ export default function KnowledgeBase() {
               active={activeFolder === null}
               onClick={() => setActiveFolder(null)}
             />
-            <FolderItem
-              name="Unfiled" count={null}
-              active={activeFolder === "unfiled"}
-              onClick={() => setActiveFolder("unfiled")}
-              indent={0}
-            />
             {buildTree(folders, null).map((f) => (
               <FolderTreeItem
                 key={f.id} folder={f} folders={folders}
                 activeFolder={activeFolder}
                 onSelect={(id) => setActiveFolder(id)}
                 onDelete={isAdmin ? async (id) => {
-                  if (!confirm("Delete this folder? Documents will become unfiled.")) return;
+                  if (!confirm("Delete this folder and all documents inside it?")) return;
                   await api.deleteKbFolder(id);
                   if (activeFolder === id) setActiveFolder(null);
                   reloadFolders();
@@ -419,14 +416,16 @@ function NewFolderForm({ folders, onClose, onCreated }) {
 }
 
 function NewDocForm({ folders, skills, activeFolder, onClose, onCreated }) {
+  const defaultFolder = typeof activeFolder === "number" ? String(activeFolder) : (folders.length > 0 ? String(folders[0].id) : "");
   const [title, setTitle] = useState("");
-  const [folderId, setFolderId] = useState(typeof activeFolder === "number" ? String(activeFolder) : "");
+  const [folderId, setFolderId] = useState(defaultFolder);
   const [busy, setBusy] = useState(false);
   const submit = async (e) => {
     e.preventDefault();
+    if (!folderId) return;
     setBusy(true);
     try {
-      const doc = await api.createKbDoc({ title, folder_id: folderId || null, content: "" });
+      const doc = await api.createKbDoc({ title, folder_id: folderId, content: "" });
       onCreated(doc);
     } catch (e) { alert(e.message); setBusy(false); }
   };
@@ -438,14 +437,14 @@ function NewDocForm({ folders, skills, activeFolder, onClose, onCreated }) {
       </div>
       <div className="field">
         <label className="label">Folder</label>
-        <select className="input" value={folderId} onChange={(e) => setFolderId(e.target.value)}>
-          <option value="">Unfiled</option>
+        <select className="input" value={folderId} onChange={(e) => setFolderId(e.target.value)} required>
+          <option value="" disabled>Select a folder</option>
           {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
         </select>
       </div>
       <div className="actions">
         <button type="button" className="btn ghost small" onClick={onClose}>Cancel</button>
-        <button type="submit" className="btn small" disabled={busy}>{busy ? "Creating…" : "Create & edit"}</button>
+        <button type="submit" className="btn small" disabled={busy || !folderId}>{busy ? "Creating\u2026" : "Create & edit"}</button>
       </div>
     </form>
   );
