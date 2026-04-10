@@ -661,10 +661,14 @@ input, textarea, select { font-family: inherit; }
   height: auto;
   overflow: visible;
 }
+.radar-center-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 16px;
+}
 .radar-svg {
-  max-width: 480px;
-  margin: 0 auto;
-  display: block;
+  width: 100%;
+  max-width: 520px;
 }
 .matrix-svg .grid-line {
   stroke: var(--line);
@@ -711,6 +715,8 @@ input, textarea, select { font-family: inherit; }
 .viz-legend-line {
   width: 16px; height: 2px; border-radius: 1px; flex-shrink: 0;
 }
+.spread-row-bg { transition: fill 0.12s ease; }
+.spread-row-bg:hover { fill: var(--accent-soft); }
 
 /* Domain colors (used by matrix header bars and pills) */
 .domain-databases  { --d: #c8956d; }
