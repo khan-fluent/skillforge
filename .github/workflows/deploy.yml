@@ -15,8 +15,8 @@ jobs:
   deploy:
     uses: khan-fluent/workflows/.github/workflows/ecs-deploy.yml@v1
     with:
-      ecr_repository: skillforge
-      ecs_cluster: khan-fluent
-      ecs_service: skillforge
+      ecr_repository: ${{ vars.STACK_NAME || 'skillforge' }}
+      ecs_cluster: ${{ vars.ECS_CLUSTER || 'khan-fluent' }}
+      ecs_service: ${{ vars.STACK_NAME || 'skillforge' }}
       dockerfile_context: .
     secrets: inherit

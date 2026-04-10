@@ -8,6 +8,9 @@ terraform {
     }
   }
 
+  # Backend is configured per-environment. Override with:
+  #   terraform init -backend-config=backend.hcl
+  # Or update the bucket/key/region below for your AWS account.
   backend "s3" {
     bucket       = "skillforge-tfstate-282353614364"
     key          = "dev/terraform.tfstate"
@@ -21,39 +24,39 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project   = "khan-fluent"
+      Project   = var.project
       ManagedBy = "terraform"
-      Stack     = "skillforge"
+      Stack     = var.stack
     }
   }
 }
 
 locals {
-  name = "skillforge"
+  name = var.stack
 }
 
 ################################################################################
-# Shared infra coordinates (provisioned by devops-portfolio stack)
+# Shared infra coordinates (provisioned by the platform stack)
 ################################################################################
 
 data "aws_ssm_parameter" "ecs_cluster_arn" {
-  name = "/khan-fluent/ecs/cluster_arn"
+  name = "${var.ssm_prefix}/ecs/cluster_arn"
 }
 
 data "aws_ssm_parameter" "rds_host" {
-  name = "/khan-fluent/rds/host"
+  name = "${var.ssm_prefix}/rds/host"
 }
 
 data "aws_ssm_parameter" "rds_port" {
-  name = "/khan-fluent/rds/port"
+  name = "${var.ssm_prefix}/rds/port"
 }
 
 data "aws_ssm_parameter" "rds_username" {
-  name = "/khan-fluent/rds/username"
+  name = "${var.ssm_prefix}/rds/username"
 }
 
 data "aws_ssm_parameter" "rds_master_secret_arn" {
-  name = "/khan-fluent/rds/master_secret_arn"
+  name = "${var.ssm_prefix}/rds/master_secret_arn"
 }
 
 ################################################################################
@@ -61,19 +64,19 @@ data "aws_ssm_parameter" "rds_master_secret_arn" {
 ################################################################################
 
 resource "aws_ssm_parameter" "llm_provider" {
-  name  = "/skillforge/llm-provider"
+  name  = "/${local.name}/llm-provider"
   type  = "String"
   value = var.llm_provider
 }
 
 resource "aws_ssm_parameter" "anthropic_api_key" {
-  name  = "/skillforge/anthropic-api-key"
+  name  = "/${local.name}/anthropic-api-key"
   type  = "SecureString"
   value = var.anthropic_api_key
 }
 
 resource "aws_ssm_parameter" "jwt_secret" {
-  name  = "/skillforge/jwt-secret"
+  name  = "/${local.name}/jwt-secret"
   type  = "SecureString"
   value = var.jwt_secret
 }
@@ -83,32 +86,32 @@ resource "aws_ssm_parameter" "jwt_secret" {
 ################################################################################
 
 module "ecr" {
-  source = "git::https://github.com/khan-fluent/terraform-modules.git//modules/ecr?ref=v1"
+  source = "${var.terraform_modules_source}//modules/ecr?ref=v1"
 
   name                  = local.name
   lifecycle_description = "Keep only the 3 most recent images"
 }
 
 ################################################################################
-# ECS service on shared khan-fluent cluster
+# ECS service on shared cluster
 ################################################################################
 
 module "ecs_service" {
-  source = "git::https://github.com/khan-fluent/terraform-modules.git//modules/ecs-service-ec2?ref=v1"
+  source = "${var.terraform_modules_source}//modules/ecs-service-ec2?ref=v1"
 
   service_name       = local.name
   cluster_id         = data.aws_ssm_parameter.ecs_cluster_arn.value
   ecr_repository_url = module.ecr.repository_url
-  container_port     = 3003
-  log_retention_days = 7
-  container_memory   = 192
+  container_port     = var.container_port
+  log_retention_days = var.log_retention_days
+  container_memory   = var.container_memory
 
   environment = [
     { name = "NODE_ENV", value = "production" },
-    { name = "PORT", value = "3003" },
+    { name = "PORT", value = tostring(var.container_port) },
     { name = "DB_HOST", value = data.aws_ssm_parameter.rds_host.value },
     { name = "DB_PORT", value = data.aws_ssm_parameter.rds_port.value },
-    { name = "DB_NAME", value = "skillforge" },
+    { name = "DB_NAME", value = local.name },
     { name = "DB_USERNAME", value = data.aws_ssm_parameter.rds_username.value },
     { name = "AUTH_METHOD", value = var.auth_method },
   ]

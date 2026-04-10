@@ -1,0 +1,98 @@
+# ============================================================================
+# Skillforge — Deployment Configuration
+# Copy this file to terraform.tfvars and fill in your values.
+# ============================================================================
+
+# --- Required -----------------------------------------------------------
+
+# Docker image URI — provided by your Skillforge license/subscription
+image = "ghcr.io/khan-fluent/skillforge:latest"
+
+# Your AWS networking
+vpc_id     = "vpc-0abc123def456"
+subnet_ids = ["subnet-aaa111", "subnet-bbb222"]
+
+# Auth secret — generate with: openssl rand -base64 48
+jwt_secret = ""
+
+# --- Database -----------------------------------------------------------
+# Option A: Use your existing PostgreSQL
+db_host     = "your-db.cluster-abc.us-east-1.rds.amazonaws.com"
+db_port     = 5432
+db_name     = "skillforge"
+db_username = "skillforge"
+db_password = "your-db-password"
+
+# Option B: Let Terraform create a new RDS instance
+# create_rds         = true
+# rds_instance_class = "db.t3.micro"
+
+# --- AI/LLM Provider ---------------------------------------------------
+# Anthropic (default)
+llm_provider = "anthropic"
+llm_api_key  = "sk-ant-..."
+
+# OpenAI
+# llm_provider = "openai"
+# llm_api_key  = "sk-..."
+
+# AWS Bedrock (uses IAM roles — no API key needed)
+# llm_provider = "bedrock"
+# Note: attach Bedrock access policy to the task_role_arn output
+
+# Azure OpenAI
+# llm_provider    = "azure"
+# llm_api_key     = "..."
+# extra_env_vars = {
+#   AZURE_OPENAI_ENDPOINT    = "https://your-resource.openai.azure.com"
+#   AZURE_OPENAI_API_VERSION = "2024-12-01-preview"
+# }
+
+# Model overrides (optional — each provider has sensible defaults)
+# llm_chat_model = "claude-opus-4-6"
+# llm_fast_model = "claude-sonnet-4-5-20250929"
+
+# --- Authentication -----------------------------------------------------
+auth_method = "local"
+
+# OIDC (Okta, Azure AD, Google Workspace, Auth0, etc.)
+# auth_method = "oidc"
+# extra_env_vars = {
+#   OIDC_ISSUER_URL    = "https://login.microsoftonline.com/{tenant}/v2.0"
+#   OIDC_CLIENT_ID     = "..."
+#   OIDC_CLIENT_SECRET = "..."
+#   OIDC_REDIRECT_URI  = "https://skillforge.yourcompany.com/api/auth/sso/callback"
+#   SSO_AUTO_CREATE_USERS = "true"
+#   SSO_DEFAULT_TEAM_ID   = "1"
+# }
+
+# SAML (ADFS, Shibboleth, etc.)
+# auth_method = "saml"
+# extra_env_vars = {
+#   SAML_ENTRY_POINT  = "https://idp.yourcompany.com/sso/saml"
+#   SAML_ISSUER       = "skillforge"
+#   SAML_CALLBACK_URL = "https://skillforge.yourcompany.com/api/auth/sso/callback"
+#   SAML_CERT         = "MIICpDCCAYwCCQ..."
+#   SSO_AUTO_CREATE_USERS = "true"
+#   SSO_DEFAULT_TEAM_ID   = "1"
+# }
+
+# --- Infrastructure sizing ----------------------------------------------
+# aws_region         = "us-east-1"
+# name               = "skillforge"
+# launch_type        = "FARGATE"
+# cpu                = 256
+# memory             = 512
+# desired_count      = 1
+# container_port     = 3003
+# assign_public_ip   = false
+# log_retention_days = 30
+
+# Use an existing ECS cluster instead of creating one:
+# ecs_cluster_arn = "arn:aws:ecs:us-east-1:123456789:cluster/my-cluster"
+
+# --- Tags ---------------------------------------------------------------
+# tags = {
+#   Environment = "production"
+#   Team        = "platform"
+# }

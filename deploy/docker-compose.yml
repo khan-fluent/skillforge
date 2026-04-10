@@ -1,0 +1,77 @@
+# ============================================================================
+# Skillforge — Self-Hosted Production Deployment
+#
+# This runs Skillforge + PostgreSQL on any machine with Docker.
+# No cloud provider required.
+#
+# Quick start:
+#   1. Copy env.example → .env and fill in values
+#   2. Run: docker compose up -d
+#   3. Open http://localhost:3003
+# ============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-skillforge}
+      POSTGRES_USER: ${DB_USERNAME:-skillforge}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - skillforge_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-skillforge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ${SKILLFORGE_IMAGE:?Set SKILLFORGE_IMAGE in .env}
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3003}:${PORT:-3003}"
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3003}
+
+      # Database
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-skillforge}
+      DB_USERNAME: ${DB_USERNAME:-skillforge}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+
+      # Auth
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      AUTH_METHOD: ${AUTH_METHOD:-local}
+
+      # LLM
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-}
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-}
+      LLM_FAST_MODEL: ${LLM_FAST_MODEL:-}
+
+      # SSO (only needed when AUTH_METHOD is oidc or saml)
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:-}
+      SAML_ENTRY_POINT: ${SAML_ENTRY_POINT:-}
+      SAML_ISSUER: ${SAML_ISSUER:-}
+      SAML_CALLBACK_URL: ${SAML_CALLBACK_URL:-}
+      SAML_CERT: ${SAML_CERT:-}
+      SSO_AUTO_CREATE_USERS: ${SSO_AUTO_CREATE_USERS:-}
+      SSO_DEFAULT_TEAM_ID: ${SSO_DEFAULT_TEAM_ID:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  skillforge_data:

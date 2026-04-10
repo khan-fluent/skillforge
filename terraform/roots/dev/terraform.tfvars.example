@@ -1,1 +1,17 @@
+# Required
+jwt_secret       = "generate-a-random-64-char-string"
+
+# Required if llm_provider = "anthropic" (the default)
 anthropic_api_key = "sk-ant-..."
+
+# Override defaults as needed
+# aws_region               = "us-east-1"
+# project                  = "khan-fluent"
+# stack                    = "skillforge"
+# ssm_prefix               = "/khan-fluent"
+# terraform_modules_source = "git::https://github.com/khan-fluent/terraform-modules.git"
+# llm_provider             = "anthropic"
+# auth_method              = "local"
+# container_port           = 3003
+# container_memory         = 192
+# log_retention_days       = 7
