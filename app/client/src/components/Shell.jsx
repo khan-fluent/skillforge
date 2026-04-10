@@ -9,9 +9,9 @@ const NAV = [
   {
     label: "Knowledge", icon: "✦", children: [
       { to: "/app/skills", label: "Skills" },
-      { to: "/app/matrix", label: "Skill matrix" },
-      { to: "/app/gaps", label: "Gaps" },
       { to: "/app/domains", label: "Domains" },
+      { to: "/app/matrix", label: "Matrix" },
+      { to: "/app/gaps", label: "Gaps" },
     ],
   },
   {
