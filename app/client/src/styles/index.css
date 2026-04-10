@@ -538,6 +538,21 @@ input, textarea, select { font-family: inherit; }
 .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
 .col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 
+/* Dashboard panels */
+.dash-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+@media (max-width: 900px) { .dash-panels { grid-template-columns: 1fr; } }
+.dash-risk-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.dash-risk-row:last-child { border-bottom: none; }
+.dash-risk-indicator { display: flex; align-items: center; gap: 10px; min-width: 140px; }
+.dash-risk-bar {
+  width: 60px; height: 6px; border-radius: 999px;
+  background: var(--paper-warm); overflow: hidden;
+}
+.dash-risk-bar > div { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+
 /* ─────────── Skill matrix — redesigned for warmth + readability ─────────── */
 
 .matrix-frame {
