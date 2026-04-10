@@ -43,6 +43,41 @@
   --shadow-sm: 0 1px 2px rgba(28, 27, 26, 0.04), 0 1px 1px rgba(28, 27, 26, 0.03);
   --shadow-md: 0 4px 16px rgba(28, 27, 26, 0.06), 0 1px 3px rgba(28, 27, 26, 0.04);
   --shadow-lg: 0 24px 60px rgba(28, 27, 26, 0.10), 0 4px 12px rgba(28, 27, 26, 0.05);
+
+  color-scheme: light;
+}
+
+/* ── Dark mode overrides ── */
+[data-theme="dark"] {
+  --paper:        #111115;
+  --paper-warm:   #191a20;
+  --paper-card:   #1c1d24;
+  --ink:          #e6e4df;
+  --ink-soft:     #b0aead;
+  --ink-mute:     #76757b;
+  --ink-faint:    #44444c;
+  --line:         #2a2b32;
+  --line-strong:  #36373f;
+
+  --accent:       #7b90ff;
+  --accent-soft:  rgba(123, 144, 255, 0.12);
+  --accent-ring:  rgba(123, 144, 255, 0.3);
+
+  --warm-1:       #2a2520;
+  --warm-2:       #3d3225;
+  --warm-3:       #5c4232;
+  --warm-4:       #8b5a3c;
+  --warm-5:       #d4a878;
+
+  --good:         #6aad6a;
+  --warn:         #d4a032;
+  --bad:          #d45a3a;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.25);
+
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -57,6 +92,7 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -730,3 +766,11 @@ input, textarea, select { font-family: inherit; }
 
 /* Spinner page */
 .center-fill { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+/* ── Dark mode refinements for elements with hardcoded colors ── */
+[data-theme="dark"] .matrix-cell.l3 { color: var(--paper); }
+[data-theme="dark"] .matrix-cell.l4 { color: var(--paper); }
+[data-theme="dark"] .auth-aside { background: #0a0b10; }
+[data-theme="dark"] .shell-side { background: var(--paper); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--line-strong); border-color: var(--paper); }
+[data-theme="dark"] ::selection { background: var(--accent-soft); color: var(--accent); }

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import ThemeToggle from "../components/ThemeToggle.jsx";
 
 const fade = { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } };
 
@@ -8,7 +9,8 @@ export default function Landing() {
     <div className="landing">
       <header className="landing-nav">
         <div className="brand">Skillforge<span className="dot">.</span></div>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <ThemeToggle />
           <Link to="/login" className="btn ghost small">Sign in</Link>
           <Link to="/signup" className="btn small">Get started</Link>
         </div>

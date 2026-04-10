@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
+import ThemeToggle from "./ThemeToggle.jsx";
 
 const NAV = [
   { to: "/app",                label: "Overview",       icon: "◇" },
@@ -31,6 +32,7 @@ export default function Shell() {
             </NavLink>
           ))}
         </nav>
+        <ThemeToggle style={{ marginBottom: 14, alignSelf: "flex-start" }} />
         <div className="me">
           <div className="avatar">{initials}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
