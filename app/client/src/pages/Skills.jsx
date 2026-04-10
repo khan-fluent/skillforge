@@ -3,12 +3,13 @@ import { api } from "../lib/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import Modal from "../components/Modal.jsx";
 
-const DOMAINS = ["databases", "cloud", "languages", "tools", "other"];
+const DOMAINS = ["databases", "cloud", "languages", "tools", "practices", "security", "data", "other"];
 
 export default function Skills() {
   const { user } = useAuth();
   const [skills, setSkills] = useState([]);
   const [adding, setAdding] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const reload = () => api.skills().then(setSkills).catch(() => {});
   useEffect(() => { reload(); }, []);
@@ -32,15 +33,21 @@ export default function Skills() {
           <h1>Skills</h1>
           <p>The skills your team cares about, organized by domain.</p>
         </div>
-        <button className="btn" onClick={() => setAdding(true)}>Add skill</button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button className="btn ghost" onClick={() => setGenerating(true)}>✧ Generate with AI</button>
+          <button className="btn" onClick={() => setAdding(true)}>Add skill</button>
+        </div>
       </div>
 
       {Object.keys(grouped).length === 0 && (
         <div className="card" style={{ textAlign: "center", padding: 48, background: "var(--paper-warm)" }}>
           <h3 style={{ textTransform: "none", fontSize: 14 }}>No skills yet</h3>
-          <h2 className="serif" style={{ fontSize: 32, margin: "8px 0 16px" }}>Add the first skill.</h2>
-          <p style={{ color: "var(--ink-soft)", marginBottom: 24 }}>What does your team need to know how to do?</p>
-          <button className="btn" onClick={() => setAdding(true)}>Add a skill</button>
+          <h2 className="serif" style={{ fontSize: 32, margin: "8px 0 16px" }}>Describe your stack and let AI fill it in.</h2>
+          <p style={{ color: "var(--ink-soft)", marginBottom: 24 }}>Or add skills manually — whichever you prefer.</p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button className="btn" onClick={() => setGenerating(true)}>✧ Generate with AI</button>
+            <button className="btn ghost" onClick={() => setAdding(true)}>Add manually</button>
+          </div>
         </div>
       )}
 
@@ -72,6 +79,10 @@ export default function Skills() {
       <Modal open={adding} onClose={() => setAdding(false)} title="Add a skill" lede="Group it under a domain so it shows up nicely in the matrix.">
         <AddSkillForm onClose={() => setAdding(false)} onSaved={() => { setAdding(false); reload(); }} />
       </Modal>
+
+      {generating && (
+        <GenerateModal onClose={() => setGenerating(false)} onDone={() => { setGenerating(false); reload(); }} />
+      )}
     </>
   );
 }
@@ -89,7 +100,7 @@ function AddSkillForm({ onClose, onSaved }) {
   };
   return (
     <form onSubmit={submit}>
-      {err && <div className="error" style={{ background: "#f5dcd2", color: "var(--bad)", padding: "10px 14px", borderRadius: 10, fontSize: 13, marginBottom: 14 }}>{err}</div>}
+      {err && <div style={{ background: "#f5dcd2", color: "var(--bad)", padding: "10px 14px", borderRadius: 10, fontSize: 13, marginBottom: 14 }}>{err}</div>}
       <div className="field" style={{ marginBottom: 14 }}>
         <label className="label">Skill name</label>
         <input className="input" value={form.name} onChange={change("name")} placeholder="PostgreSQL" required />
@@ -109,5 +120,126 @@ function AddSkillForm({ onClose, onSaved }) {
         <button type="submit" className="btn small" disabled={busy}>{busy ? "Saving…" : "Add skill"}</button>
       </div>
     </form>
+  );
+}
+
+function GenerateModal({ onClose, onDone }) {
+  const [step, setStep] = useState("describe"); // describe → review → importing
+  const [description, setDescription] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [selected, setSelected] = useState(new Set());
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const generate = async () => {
+    setErr(""); setBusy(true);
+    try {
+      const res = await api.generateSkills(description);
+      setSuggestions(res.skills);
+      setSelected(new Set(res.skills.map((_, i) => i)));
+      setStep("review");
+    } catch (e) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const toggle = (i) => {
+    const next = new Set(selected);
+    next.has(i) ? next.delete(i) : next.add(i);
+    setSelected(next);
+  };
+  const selectAll = () => setSelected(new Set(suggestions.map((_, i) => i)));
+  const selectNone = () => setSelected(new Set());
+
+  const importSkills = async () => {
+    setErr(""); setBusy(true);
+    try {
+      const toAdd = suggestions.filter((_, i) => selected.has(i));
+      await api.bulkAddSkills(toAdd);
+      onDone();
+    } catch (e) { setErr(e.message); setBusy(false); }
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: step === "review" ? 700 : 520 }} onClick={(e) => e.stopPropagation()}>
+        {step === "describe" && (
+          <>
+            <h2>Generate skills with AI</h2>
+            <p className="lede">Describe your team's tech stack, tools, cloud providers, languages, and practices. Skillforge will generate structured skills with the right domains.</p>
+            {err && <div style={{ background: "#f5dcd2", color: "var(--bad)", padding: "10px 14px", borderRadius: 10, fontSize: 13, marginBottom: 14 }}>{err}</div>}
+            <textarea
+              className="input"
+              rows={5}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={"We run Node.js and React apps on AWS ECS behind Cloudflare. PostgreSQL for databases, Terraform for infrastructure, GitHub Actions for CI/CD. Some Python for data pipelines. Starting to explore Kubernetes."}
+              style={{ resize: "vertical", lineHeight: 1.6 }}
+            />
+            <div className="actions">
+              <button className="btn ghost small" onClick={onClose} disabled={busy}>Cancel</button>
+              <button className="btn small accent" onClick={generate} disabled={busy || description.trim().length < 10}>
+                {busy ? "Generating…" : "✧ Generate"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === "review" && (
+          <>
+            <h2>Review generated skills</h2>
+            <p className="lede">
+              {suggestions.length} skills suggested. Uncheck any you don't want, then import.
+            </p>
+            {err && <div style={{ background: "#f5dcd2", color: "var(--bad)", padding: "10px 14px", borderRadius: 10, fontSize: 13, marginBottom: 14 }}>{err}</div>}
+
+            <div style={{ display: "flex", gap: 10, marginBottom: 16, fontSize: 12 }}>
+              <button className="btn ghost small" onClick={selectAll} style={{ padding: "4px 12px" }}>Select all</button>
+              <button className="btn ghost small" onClick={selectNone} style={{ padding: "4px 12px" }}>Deselect all</button>
+              <span style={{ marginLeft: "auto", color: "var(--ink-mute)", alignSelf: "center" }}>
+                {selected.size} of {suggestions.length} selected
+              </span>
+            </div>
+
+            <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+              {suggestions.map((s, i) => (
+                <label
+                  key={i}
+                  style={{
+                    display: "flex", gap: 14, alignItems: "start",
+                    padding: "14px 16px", borderRadius: 12,
+                    background: selected.has(i) ? "var(--paper-card)" : "transparent",
+                    border: `1px solid ${selected.has(i) ? "var(--line-strong)" : "var(--line)"}`,
+                    cursor: "pointer", transition: "all 0.15s ease",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(i)}
+                    onChange={() => toggle(i)}
+                    style={{ marginTop: 3, accentColor: "var(--accent)" }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>{s.name}</span>
+                      <span className="pill" style={{ fontSize: 10 }}>{s.domain}</span>
+                    </div>
+                    {s.description && (
+                      <div style={{ fontSize: 12, color: "var(--ink-mute)", marginTop: 4, lineHeight: 1.5 }}>{s.description}</div>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="actions" style={{ marginTop: 20 }}>
+              <button className="btn ghost small" onClick={() => setStep("describe")} disabled={busy}>Back</button>
+              <button className="btn small" onClick={importSkills} disabled={busy || selected.size === 0}>
+                {busy ? "Importing…" : `Import ${selected.size} skills`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

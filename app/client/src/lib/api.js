@@ -41,8 +41,10 @@ export const api = {
 
   // skills
   skills:      () => request("/skills"),
-  createSkill: (data) => request("/skills", { method: "POST", body: JSON.stringify(data) }),
-  deleteSkill: (id) => request(`/skills/${id}`, { method: "DELETE" }),
+  createSkill:    (data) => request("/skills", { method: "POST", body: JSON.stringify(data) }),
+  bulkAddSkills:  (skills) => request("/skills/bulk", { method: "POST", body: JSON.stringify({ skills }) }),
+  generateSkills: (description) => request("/skills/generate", { method: "POST", body: JSON.stringify({ description }) }),
+  deleteSkill:    (id) => request(`/skills/${id}`, { method: "DELETE" }),
 
   // proficiencies
   setProficiency: (data) => request("/proficiencies", { method: "POST", body: JSON.stringify(data) }),
