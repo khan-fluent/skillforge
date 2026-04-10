@@ -60,6 +60,12 @@ data "aws_ssm_parameter" "rds_master_secret_arn" {
 # Application secrets — SSM SecureString (free-tier vs Secrets Manager $0.40/mo)
 ################################################################################
 
+resource "aws_ssm_parameter" "llm_provider" {
+  name  = "/skillforge/llm-provider"
+  type  = "String"
+  value = var.llm_provider
+}
+
 resource "aws_ssm_parameter" "anthropic_api_key" {
   name  = "/skillforge/anthropic-api-key"
   type  = "SecureString"
@@ -112,6 +118,10 @@ module "ecs_service" {
       valueFrom = "${data.aws_ssm_parameter.rds_master_secret_arn.value}:password::"
     },
     {
+      name      = "LLM_PROVIDER"
+      valueFrom = aws_ssm_parameter.llm_provider.arn
+    },
+    {
       name      = "ANTHROPIC_API_KEY"
       valueFrom = aws_ssm_parameter.anthropic_api_key.arn
     },
@@ -126,6 +136,7 @@ module "ecs_service" {
   ]
 
   execution_role_ssm_parameter_arns = [
+    aws_ssm_parameter.llm_provider.arn,
     aws_ssm_parameter.anthropic_api_key.arn,
     aws_ssm_parameter.jwt_secret.arn,
   ]

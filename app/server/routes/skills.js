@@ -1,10 +1,9 @@
 import { Router } from "express";
-import Anthropic from "@anthropic-ai/sdk";
+import { getLLM } from "../services/llm/index.js";
 import { query } from "../db/index.js";
 import requireAuth, { requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 router.get("/", requireAuth, async (req, res, next) => {
   try {
@@ -73,16 +72,18 @@ router.post("/generate", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: "Describe your stack in at least a sentence." });
     }
 
-    // Fetch existing skills so Claude can avoid duplicates.
+    // Fetch existing skills so the LLM can avoid duplicates.
     const { rows: existing } = await query(
       "SELECT name FROM skills WHERE team_id = $1",
       [req.user.team_id]
     );
     const existingNames = existing.map((s) => s.name);
 
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 2000,
+    const llm = await getLLM();
+
+    const text = await llm.chat({
+      model: llm.fastModel,
+      maxTokens: 2000,
       system: `You are a skill-taxonomy expert for engineering teams. Given a
 free-text description of a team's tech stack, tools, and practices, generate
 a JSON array of skill objects. Each object must have:
@@ -102,16 +103,11 @@ Rules:
       messages: [{ role: "user", content: description.trim() }],
     });
 
-    const text = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-
     let skills;
     try {
       skills = JSON.parse(text);
     } catch {
-      // Try to extract JSON from the response if Claude wrapped it.
+      // Try to extract JSON from the response if the LLM wrapped it.
       const match = text.match(/\[[\s\S]*\]/);
       if (match) skills = JSON.parse(match[0]);
       else return res.status(502).json({ error: "AI returned invalid JSON. Try again." });

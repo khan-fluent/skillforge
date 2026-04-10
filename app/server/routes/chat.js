@@ -1,11 +1,9 @@
 import { Router } from "express";
-import Anthropic from "@anthropic-ai/sdk";
+import { getLLM } from "../services/llm/index.js";
 import { buildSnapshot } from "../services/snapshot.js";
 import requireAuth from "../middleware/auth.js";
 
 const router = Router();
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = "claude-opus-4-6";
 
 const SYSTEM_PROMPT = `You are Skillforge AI, a warm, perceptive team-knowledge analyst.
 You help engineering leaders understand their team's skills, identify
@@ -26,20 +24,16 @@ router.post("/", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: "messages array required" });
     }
 
+    const llm = await getLLM();
     const snapshot = await buildSnapshot(req.user.team_id);
     const systemWithData = `${SYSTEM_PROMPT}\n\n<team_snapshot>\n${JSON.stringify(snapshot, null, 2)}\n</team_snapshot>`;
 
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 1500,
+    const text = await llm.chat({
+      model: llm.chatModel,
       system: systemWithData,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      maxTokens: 1500,
     });
-
-    const text = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
 
     res.json({ role: "assistant", content: text });
   } catch (e) {

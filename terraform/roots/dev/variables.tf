@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "llm_provider" {
+  description = "LLM provider: anthropic, openai, bedrock, or azure"
+  type        = string
+  default     = "anthropic"
+}
+
 variable "anthropic_api_key" {
   description = "Anthropic API key for Claude"
   type        = string
