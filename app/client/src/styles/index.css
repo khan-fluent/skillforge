@@ -1,81 +1,80 @@
 /* ─────────────────────────────────────────────────────────────
-   Skillforge — warm, light, editorial design language.
-   Inspired by heyquin.io: graphite text on cream paper, generous
-   whitespace, an Instrument Serif accent for headlines, and a
-   single muted blue for interactive elements. Nothing neon.
+   Skillforge — nature-inspired design system.
+   Light: Desert — sandstone, dune, warm amber tones
+   Dark: Volcanic — obsidian, ember, deep burgundy
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  /* Paper + ink — pulled cooler and a notch darker. Still light, still warm
-     enough to feel like paper, but with a slight grey-blue shift so the
-     surface doesn't compete with our other (truly warm cream) apps. */
-  --paper:        #ebe9e3;
-  --paper-warm:   #dedcd4;
-  --paper-card:   #f4f2ec;
-  --ink:          #14151b;
-  --ink-soft:     #3e3f47;
-  --ink-mute:     #7a7a82;
-  --ink-faint:    #b8b7bd;
-  --line:         #d8d5cb;
-  --line-strong:  #c4c1b6;
+  /* Desert palette — sandstone surfaces, warm earth tones */
+  --paper:        #f0ebe2;  /* bleached sand */
+  --paper-warm:   #e6dfd4;  /* dune shadow */
+  --paper-card:   #f7f3ec;  /* sunlit stone */
+  --ink:          #2c1e14;  /* dark earth */
+  --ink-soft:     #4a3828;  /* canyon wall */
+  --ink-mute:     #8a7a6a;  /* dried clay */
+  --ink-faint:    #c4b8a8;  /* pale dust */
+  --line:         #d9d0c2;  /* sandstone grain */
+  --line-strong:  #c8bca8;  /* weathered rock */
 
-  /* Single accent — Quin's restrained electric blue */
-  --accent:       #4d65ff;
-  --accent-soft:  #eef0ff;
-  --accent-ring:  rgba(77, 101, 255, 0.25);
+  /* Accent — warm amber, like desert sun */
+  --accent:       #c47a2a;
+  --accent-soft:  rgba(196, 122, 42, 0.1);
+  --accent-ring:  rgba(196, 122, 42, 0.25);
 
-  /* Proficiency scale — cool grey to slate */
-  --warm-1:       #e0e2e8;  /* mist */
-  --warm-2:       #b8bcc8;  /* silver */
-  --warm-3:       #7d8594;  /* stone */
-  --warm-4:       #4e5669;  /* slate */
-  --warm-5:       #2b3245;  /* charcoal */
+  /* Proficiency scale — sand to deep earth */
+  --warm-1:       #ede6da;  /* dry sand */
+  --warm-2:       #d4c4a8;  /* sandstone */
+  --warm-3:       #a8906e;  /* terracotta */
+  --warm-4:       #6e5640;  /* canyon */
+  --warm-5:       #3a2a1e;  /* deep earth */
 
-  --good:         #5b8a5b;
-  --warn:         #b8862e;
-  --bad:          #b8482e;
+  --good:         #6a8f5b;  /* desert sage */
+  --warn:         #c49032;  /* amber */
+  --bad:          #b54a32;  /* red clay */
 
   --r-sm: 8px;
   --r-md: 14px;
   --r-lg: 22px;
   --r-xl: 32px;
 
-  --shadow-sm: 0 1px 2px rgba(28, 27, 26, 0.04), 0 1px 1px rgba(28, 27, 26, 0.03);
-  --shadow-md: 0 4px 16px rgba(28, 27, 26, 0.06), 0 1px 3px rgba(28, 27, 26, 0.04);
-  --shadow-lg: 0 24px 60px rgba(28, 27, 26, 0.10), 0 4px 12px rgba(28, 27, 26, 0.05);
+  --shadow-sm: 0 1px 2px rgba(44, 30, 20, 0.05), 0 1px 1px rgba(44, 30, 20, 0.04);
+  --shadow-md: 0 4px 16px rgba(44, 30, 20, 0.08), 0 1px 3px rgba(44, 30, 20, 0.05);
+  --shadow-lg: 0 24px 60px rgba(44, 30, 20, 0.12), 0 4px 12px rgba(44, 30, 20, 0.06);
 
   color-scheme: light;
 }
 
-/* ── Dark mode overrides ── */
+/* ── Volcanic dark mode ── */
 [data-theme="dark"] {
-  --paper:        #111115;
-  --paper-warm:   #191a20;
-  --paper-card:   #1c1d24;
-  --ink:          #e6e4df;
-  --ink-soft:     #b0aead;
-  --ink-mute:     #76757b;
-  --ink-faint:    #44444c;
-  --line:         #2a2b32;
-  --line-strong:  #36373f;
+  --paper:        #100a0c;  /* obsidian */
+  --paper-warm:   #1a1114;  /* cooled lava */
+  --paper-card:   #201418;  /* volcanic rock */
+  --ink:          #ede6df;  /* ash white */
+  --ink-soft:     #c4b0a4;  /* pumice */
+  --ink-mute:     #7a6a62;  /* basalt */
+  --ink-faint:    #3a2e2a;  /* dark stone */
+  --line:         #2e2024;  /* magma seam */
+  --line-strong:  #3e2a30;  /* cracked earth */
 
-  --accent:       #7b90ff;
-  --accent-soft:  rgba(123, 144, 255, 0.12);
-  --accent-ring:  rgba(123, 144, 255, 0.3);
+  /* Accent — glowing ember */
+  --accent:       #d47a3a;
+  --accent-soft:  rgba(212, 122, 58, 0.12);
+  --accent-ring:  rgba(212, 122, 58, 0.25);
 
-  --warm-1:       #282b33;
-  --warm-2:       #3a3f4d;
-  --warm-3:       #5a6275;
-  --warm-4:       #8490a8;
-  --warm-5:       #b4bdd2;
+  /* Proficiency scale — ember glow */
+  --warm-1:       #241a1c;  /* cooled ash */
+  --warm-2:       #3a2428;  /* warm stone */
+  --warm-3:       #6a3a38;  /* ember */
+  --warm-4:       #a85a48;  /* molten glow */
+  --warm-5:       #d49a78;  /* bright ember */
 
-  --good:         #6aad6a;
-  --warn:         #d4a032;
-  --bad:          #d45a3a;
+  --good:         #6aad6a;  /* thermal moss */
+  --warn:         #d4a040;  /* sulfur */
+  --bad:          #d44a3a;  /* lava */
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
 
   color-scheme: dark;
 }
@@ -168,9 +167,9 @@ input, textarea, select { font-family: inherit; }
   border: 1px solid var(--line);
 }
 .pill.accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
-.pill.good   { background: #e8f0e8; color: var(--good); border-color: transparent; }
-.pill.warn   { background: #f5ead0; color: var(--warn); border-color: transparent; }
-.pill.bad    { background: #f5dcd2; color: var(--bad); border-color: transparent; }
+.pill.good   { background: rgba(106, 143, 91, 0.12); color: var(--good); border-color: transparent; }
+.pill.warn   { background: rgba(196, 144, 50, 0.12); color: var(--warn); border-color: transparent; }
+.pill.bad    { background: rgba(181, 74, 50, 0.12); color: var(--bad); border-color: transparent; }
 
 .card {
   background: var(--paper-card);
@@ -354,13 +353,13 @@ input, textarea, select { font-family: inherit; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 30%, rgba(77, 101, 255, 0.18), transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(232, 200, 150, 0.10), transparent 55%);
+    radial-gradient(circle at 20% 30%, rgba(196, 122, 42, 0.2), transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(181, 74, 50, 0.12), transparent 55%);
 }
 .auth-aside > * { position: relative; }
 .auth-aside .brand { font-family: "Instrument Serif", serif; font-size: 28px; }
 .auth-aside .quote { font-family: "Instrument Serif", serif; font-size: 36px; line-height: 1.2; max-width: 420px; }
-.auth-aside .quote em { color: #b8c0ff; font-style: italic; }
+.auth-aside .quote em { color: #e8b87a; font-style: italic; }
 .auth-aside .footnote { font-size: 12px; color: rgba(250, 247, 242, 0.5); letter-spacing: 0.04em; }
 
 .auth-main {
@@ -387,7 +386,7 @@ input, textarea, select { font-family: inherit; }
 .auth-form .alt { text-align: center; margin-top: 24px; font-size: 13px; color: var(--ink-mute); }
 .auth-form .alt a { color: var(--accent); font-weight: 500; }
 .auth-form .error {
-  background: #f5dcd2;
+  background: rgba(181, 74, 50, 0.1);
   color: var(--bad);
   padding: 12px 16px;
   border-radius: var(--r-md);
@@ -471,7 +470,7 @@ input, textarea, select { font-family: inherit; }
   font-weight: 500;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.shell-side nav a:hover { background: rgba(255, 255, 255, 0.6); color: var(--ink); }
+.shell-side nav a:hover { background: rgba(247, 243, 236, 0.7); color: var(--ink); }
 .shell-side nav a.active { background: var(--paper-card); color: var(--ink); box-shadow: var(--shadow-sm); }
 .shell-side nav a .icon { font-size: 15px; width: 18px; opacity: 0.7; }
 
@@ -485,7 +484,7 @@ input, textarea, select { font-family: inherit; }
   cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
 }
-.nav-section-toggle:hover { background: rgba(255, 255, 255, 0.6); color: var(--ink); }
+.nav-section-toggle:hover { background: rgba(247, 243, 236, 0.7); color: var(--ink); }
 .nav-section-toggle .icon { font-size: 15px; width: 18px; opacity: 0.7; }
 .nav-section.has-active > .nav-section-toggle { color: var(--ink); font-weight: 600; }
 .nav-chevron {
@@ -808,7 +807,7 @@ input, textarea, select { font-family: inherit; }
   cursor: pointer; transition: all 0.15s ease;
   position: relative;
 }
-.prof-seg:hover { border-color: var(--warm-3); background: rgba(125, 133, 148, 0.15); }
+.prof-seg:hover { border-color: var(--warm-3); background: rgba(168, 144, 110, 0.15); }
 .prof-seg.filled { border-color: transparent; }
 .prof-seg.filled:nth-child(1) { background: var(--warm-1); }
 .prof-seg.filled:nth-child(2) { background: var(--warm-2); }
@@ -816,7 +815,7 @@ input, textarea, select { font-family: inherit; }
 .prof-seg.filled:nth-child(4) { background: var(--warm-4); }
 .prof-seg.filled:nth-child(5) { background: var(--warm-5); }
 .prof-seg.filled.edge {
-  box-shadow: 0 0 0 2px rgba(125, 133, 148, 0.35);
+  box-shadow: 0 0 0 2px rgba(168, 144, 110, 0.35);
 }
 .prof-level-label {
   font-size: 11px; color: var(--ink-mute); min-width: 60px;
@@ -884,9 +883,9 @@ input, textarea, select { font-family: inherit; }
   min-width: 80px;
 }
 .gaps-pill:hover { background: var(--paper-warm); }
-.gaps-pill.active.critical { border-color: var(--bad); background: #f5dcd2; }
-.gaps-pill.active.warn { border-color: var(--warn); background: #f5ead0; }
-.gaps-pill.active.good { border-color: var(--good); background: #e8f0e8; }
+.gaps-pill.active.critical { border-color: var(--bad); background: rgba(181, 74, 50, 0.1); }
+.gaps-pill.active.warn { border-color: var(--warn); background: rgba(196, 144, 50, 0.1); }
+.gaps-pill.active.good { border-color: var(--good); background: rgba(106, 143, 91, 0.1); }
 .gaps-pill-count { font-family: "Instrument Serif", serif; font-size: 26px; line-height: 1; letter-spacing: -0.02em; }
 .gaps-pill.critical .gaps-pill-count { color: var(--bad); }
 .gaps-pill.warn .gaps-pill-count { color: var(--warn); }
@@ -1003,9 +1002,9 @@ input, textarea, select { font-family: inherit; }
   font-size: 13px; line-height: 1.6; padding: 12px 14px;
   border-radius: var(--r-md); border-left: 3px solid;
 }
-.detail-insight-text.bad { border-color: var(--bad); background: #f5dcd2; color: var(--ink); }
-.detail-insight-text.warn { border-color: var(--warn); background: #f5ead0; color: var(--ink); }
-.detail-insight-text.good { border-color: var(--good); background: #e8f0e8; color: var(--ink); }
+.detail-insight-text.bad { border-color: var(--bad); background: rgba(181, 74, 50, 0.1); color: var(--ink); }
+.detail-insight-text.warn { border-color: var(--warn); background: rgba(196, 144, 50, 0.1); color: var(--ink); }
+.detail-insight-text.good { border-color: var(--good); background: rgba(106, 143, 91, 0.1); color: var(--ink); }
 .detail-insight-sub { font-size: 13px; color: var(--ink-soft); margin-top: 8px; line-height: 1.6; }
 .detail-owners { border-top: 1px solid var(--line); padding-top: 16px; }
 .detail-owners-label {
@@ -1368,28 +1367,28 @@ input, textarea, select { font-family: inherit; }
 /* ── Dark mode refinements ── */
 [data-theme="dark"] .matrix-cell.l3 { color: var(--paper); }
 [data-theme="dark"] .matrix-cell.l4 { color: var(--paper); }
-[data-theme="dark"] .auth-aside { background: #0a0b10; }
+[data-theme="dark"] .auth-aside { background: #0a0608; }
 [data-theme="dark"] .shell-side { background: var(--paper); }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--line-strong); border-color: var(--paper); }
 [data-theme="dark"] ::selection { background: var(--accent-soft); color: var(--accent); }
 
 /* Nav sections */
-[data-theme="dark"] .nav-section-toggle:hover { background: rgba(255, 255, 255, 0.06); }
-[data-theme="dark"] .shell-side nav a:hover { background: rgba(255, 255, 255, 0.06); }
+[data-theme="dark"] .nav-section-toggle:hover { background: rgba(212, 122, 58, 0.06); }
+[data-theme="dark"] .shell-side nav a:hover { background: rgba(212, 122, 58, 0.06); }
 
 /* Pills — fix unreadable combos in dark mode */
-[data-theme="dark"] .pill.good { background: rgba(106, 173, 106, 0.15); color: var(--good); }
-[data-theme="dark"] .pill.warn { background: rgba(212, 160, 50, 0.15); color: var(--warn); }
-[data-theme="dark"] .pill.bad { background: rgba(212, 90, 58, 0.15); color: var(--bad); }
+[data-theme="dark"] .pill.good { background: rgba(106, 173, 106, 0.12); color: var(--good); }
+[data-theme="dark"] .pill.warn { background: rgba(212, 160, 64, 0.12); color: var(--warn); }
+[data-theme="dark"] .pill.bad { background: rgba(212, 74, 58, 0.15); color: var(--bad); }
 [data-theme="dark"] .pill.accent { background: var(--accent-soft); color: var(--accent); }
 
 /* Error messages */
 [data-theme="dark"] .auth-form .error { background: rgba(212, 90, 58, 0.15); color: var(--bad); }
 
 /* Insight boxes in gaps detail */
-[data-theme="dark"] .detail-insight-text.bad { background: rgba(212, 90, 58, 0.1); }
-[data-theme="dark"] .detail-insight-text.warn { background: rgba(212, 160, 50, 0.1); }
-[data-theme="dark"] .detail-insight-text.good { background: rgba(106, 173, 106, 0.1); }
+[data-theme="dark"] .detail-insight-text.bad { background: rgba(212, 74, 58, 0.1); }
+[data-theme="dark"] .detail-insight-text.warn { background: rgba(212, 160, 64, 0.1); }
+[data-theme="dark"] .detail-insight-text.good { background: rgba(106, 173, 106, 0.08); }
 
 /* SSO button */
 [data-theme="dark"] .auth-form .sso-btn { background: var(--paper-warm); color: var(--ink); border-color: var(--line); }

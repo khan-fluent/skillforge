@@ -7,14 +7,14 @@ import StatCard from "../components/StatCard.jsx";
 import DonutChart from "../components/DonutChart.jsx";
 
 const PALETTE = [
-  { stroke: "#6c7bff", fill: "rgba(108,123,255,0.15)" },
-  { stroke: "#e0734a", fill: "rgba(224,115,74,0.12)" },
-  { stroke: "#5bbd5b", fill: "rgba(91,189,91,0.12)" },
-  { stroke: "#d4a032", fill: "rgba(212,160,50,0.12)" },
-  { stroke: "#a67bdb", fill: "rgba(166,123,219,0.12)" },
-  { stroke: "#3bbfbf", fill: "rgba(59,191,191,0.12)" },
-  { stroke: "#db6b9d", fill: "rgba(219,107,157,0.12)" },
-  { stroke: "#8bbd3b", fill: "rgba(139,189,59,0.12)" },
+  { stroke: "#c47a2a", fill: "rgba(196,122,42,0.15)" },
+  { stroke: "#6a8f5b", fill: "rgba(106,143,91,0.12)" },
+  { stroke: "#b54a32", fill: "rgba(181,74,50,0.12)" },
+  { stroke: "#8a7040", fill: "rgba(138,112,64,0.12)" },
+  { stroke: "#7a5a3a", fill: "rgba(122,90,58,0.12)" },
+  { stroke: "#5a8a6a", fill: "rgba(90,138,106,0.12)" },
+  { stroke: "#c49032", fill: "rgba(196,144,50,0.12)" },
+  { stroke: "#9a6a4a", fill: "rgba(154,106,74,0.12)" },
 ];
 
 export default function Dashboard() {
