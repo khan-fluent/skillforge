@@ -23,7 +23,7 @@ router.get("/", requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post("/", requireAuth, async (req, res, next) => {
+router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { name, domain, description, deprecated } = req.body;
     if (!name || !domain) return res.status(400).json({ error: "name and domain required" });
@@ -41,7 +41,7 @@ router.post("/", requireAuth, async (req, res, next) => {
 });
 
 // Bulk import — used by the AI generation flow. Accepts an array of skills.
-router.post("/bulk", requireAuth, async (req, res, next) => {
+router.post("/bulk", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { skills } = req.body;
     if (!Array.isArray(skills) || skills.length === 0) {
@@ -65,7 +65,7 @@ router.post("/bulk", requireAuth, async (req, res, next) => {
 
 // AI-powered skill generation. Takes a free-text description of the team's
 // stack and returns structured skill suggestions with domains.
-router.post("/generate", requireAuth, async (req, res, next) => {
+router.post("/generate", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { description } = req.body;
     if (!description || description.trim().length < 10) {

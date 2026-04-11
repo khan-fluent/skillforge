@@ -58,8 +58,13 @@ router.post("/", requireAuth, async (req, res, next) => {
     const { user_id, skill_id, title, summary, steps } = req.body;
     if (!title) return res.status(400).json({ error: "title required" });
 
-    // Admin can assign to anyone, member can only create for self
-    const targetUserId = req.user.role === "admin" && user_id ? user_id : req.user.id;
+    // Admin can assign to anyone in team, member can only create for self
+    let targetUserId = req.user.id;
+    if (req.user.role === "admin" && user_id && user_id !== req.user.id) {
+      const { rows: targetCheck } = await query("SELECT id FROM users WHERE id = $1 AND team_id = $2", [user_id, req.user.team_id]);
+      if (!targetCheck.length) return res.status(404).json({ error: "Target user not found in team" });
+      targetUserId = user_id;
+    }
 
     const { rows } = await query(
       `INSERT INTO upskill_plans (team_id, user_id, skill_id, title, summary, created_by)
@@ -117,12 +122,27 @@ router.delete("/:id", requireAuth, async (req, res, next) => {
 
 // ─── Step CRUD ──────────────────────────────────────────────────────────────
 
+// Helper: verify user can access plan (admin: any team plan, member: own only)
+async function verifyPlanAccess(planId, user) {
+  const isAdmin = user.role === "admin";
+  const { rows } = await query(
+    `SELECT id FROM upskill_plans WHERE id = $1 AND team_id = $2 ${isAdmin ? "" : "AND user_id = $3"}`,
+    isAdmin ? [planId, user.team_id] : [planId, user.team_id, user.id]
+  );
+  return rows.length > 0;
+}
+
+async function getStepPlanId(stepId) {
+  const { rows } = await query("SELECT plan_id FROM upskill_steps WHERE id = $1", [stepId]);
+  return rows.length > 0 ? rows[0].plan_id : null;
+}
+
 // POST /upskill/:planId/steps — add a step
 router.post("/:planId/steps", requireAuth, async (req, res, next) => {
   try {
+    if (!await verifyPlanAccess(req.params.planId, req.user)) return res.status(403).json({ error: "Forbidden" });
     const { title, description } = req.body;
     if (!title) return res.status(400).json({ error: "title required" });
-    // Get max sort_order
     const { rows: maxRow } = await query(
       "SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order FROM upskill_steps WHERE plan_id = $1",
       [req.params.planId]
@@ -139,6 +159,9 @@ router.post("/:planId/steps", requireAuth, async (req, res, next) => {
 // PUT /upskill/steps/:id — update step (toggle, edit title/desc)
 router.put("/steps/:id", requireAuth, async (req, res, next) => {
   try {
+    const planId = await getStepPlanId(req.params.id);
+    if (!planId || !await verifyPlanAccess(planId, req.user)) return res.status(403).json({ error: "Forbidden" });
+
     const { title, description, completed } = req.body;
     const updates = [];
     const values = [req.params.id];
@@ -159,7 +182,7 @@ router.put("/steps/:id", requireAuth, async (req, res, next) => {
       values
     );
     if (!rows.length) return res.status(404).json({ error: "Step not found" });
-    await query("UPDATE upskill_plans SET updated_at = NOW() WHERE id = $1", [rows[0].plan_id]);
+    await query("UPDATE upskill_plans SET updated_at = NOW() WHERE id = $1", [planId]);
     res.json(rows[0]);
   } catch (e) { next(e); }
 });
@@ -167,8 +190,11 @@ router.put("/steps/:id", requireAuth, async (req, res, next) => {
 // DELETE /upskill/steps/:id
 router.delete("/steps/:id", requireAuth, async (req, res, next) => {
   try {
-    const { rows } = await query("DELETE FROM upskill_steps WHERE id = $1 RETURNING plan_id", [req.params.id]);
-    if (rows.length) await query("UPDATE upskill_plans SET updated_at = NOW() WHERE id = $1", [rows[0].plan_id]);
+    const planId = await getStepPlanId(req.params.id);
+    if (!planId || !await verifyPlanAccess(planId, req.user)) return res.status(403).json({ error: "Forbidden" });
+
+    await query("DELETE FROM upskill_steps WHERE id = $1", [req.params.id]);
+    await query("UPDATE upskill_plans SET updated_at = NOW() WHERE id = $1", [planId]);
     res.status(204).end();
   } catch (e) { next(e); }
 });
@@ -220,7 +246,12 @@ Team skills: ${JSON.stringify(snapshot.skills?.map(s => s.name) || [])}`
       else return res.status(502).json({ error: "AI returned invalid format. Try again." });
     }
 
-    const targetUserId = req.user.role === "admin" && user_id ? user_id : req.user.id;
+    let targetUserId = req.user.id;
+    if (req.user.role === "admin" && user_id && user_id !== req.user.id) {
+      const { rows: targetCheck } = await query("SELECT id FROM users WHERE id = $1 AND team_id = $2", [user_id, req.user.team_id]);
+      if (!targetCheck.length) return res.status(404).json({ error: "Target user not found in team" });
+      targetUserId = user_id;
+    }
 
     const { rows } = await query(
       `INSERT INTO upskill_plans (team_id, user_id, skill_id, title, summary, created_by)

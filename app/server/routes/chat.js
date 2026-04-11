@@ -37,20 +37,21 @@ router.post("/", requireAuth, async (req, res, next) => {
       maxTokens: 1500,
     });
 
-    // Persist to session if provided (or create new one)
+    // Persist to session if provided — validate ownership first
     let sessionId = session_id;
     if (sessionId) {
-      // Save the latest user message + assistant response
-      const lastUserMsg = messages[messages.length - 1];
-      await query(
-        "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'user', $2)",
-        [sessionId, lastUserMsg.content]
+      const { rows: sessionCheck } = await query(
+        "SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2",
+        [sessionId, req.user.id]
       );
-      await query(
-        "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'assistant', $2)",
-        [sessionId, text]
-      );
-      await query("UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1", [sessionId]);
+      if (sessionCheck.length > 0) {
+        const lastUserMsg = messages[messages.length - 1];
+        await query("INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'user', $2)", [sessionId, lastUserMsg.content]);
+        await query("INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'assistant', $2)", [sessionId, text]);
+        await query("UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1", [sessionId]);
+      } else {
+        sessionId = null; // Invalid session, don't persist
+      }
     }
 
     res.json({ role: "assistant", content: text, session_id: sessionId });
