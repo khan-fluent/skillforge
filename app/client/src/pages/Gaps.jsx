@@ -134,10 +134,13 @@ export default function Gaps() {
         )}
       </div>
 
-      {/* AI Insights */}
+      {/* AI Insights — informational only */}
       {insights.length > 0 && (
         <div className="gaps-insights">
-          <h3 style={{ margin: "0 0 14px", fontSize: 15 }}>AI Insights</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <h3 style={{ margin: 0, fontSize: 15 }}>AI Insights</h3>
+            <Link to="/app/upskill" style={{ fontSize: 12, color: "var(--accent)" }}>Go to Upskill to take action</Link>
+          </div>
           <div className="gaps-insights-list">
             {insights.map((ins, i) => (
               <div key={i} className={`gaps-insight ${ins.priority}`}>
@@ -148,24 +151,6 @@ export default function Gaps() {
                   <span className="gaps-insight-title">{ins.title}</span>
                 </div>
                 <span className="gaps-insight-desc">{ins.description}</span>
-                {(ins.type === "upskill" || ins.type === "gap") && ins.skill_name ? (
-                  <Link
-                    to={`/app/upskill?generate=${encodeURIComponent(JSON.stringify({
-                      user_name: ins.user_name || "the team",
-                      skill_name: ins.skill_name,
-                      current_level: ins.current_level || 0,
-                      skill_id: ins.skill_id,
-                      user_id: ins.user_id,
-                    }))}`}
-                    className="gaps-insight-cta"
-                  >
-                    Create plan
-                  </Link>
-                ) : (
-                  <Link to={`/app/chat?context=${encodeURIComponent(ins.action)}`} className="gaps-insight-cta">
-                    Take action
-                  </Link>
-                )}
               </div>
             ))}
           </div>

@@ -97,7 +97,9 @@ export const api = {
   createUpskill:   (data) => request("/upskill", { method: "POST", body: JSON.stringify(data) }),
   updateUpskill:   (id, data) => request(`/upskill/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteUpskill:   (id) => request(`/upskill/${id}`, { method: "DELETE" }),
-  toggleStep:      (id, completed) => request(`/upskill/steps/${id}`, { method: "PUT", body: JSON.stringify({ completed }) }),
+  addStep:         (planId, data) => request(`/upskill/${planId}/steps`, { method: "POST", body: JSON.stringify(data) }),
+  updateStep:      (id, data) => request(`/upskill/steps/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteStep:      (id) => request(`/upskill/steps/${id}`, { method: "DELETE" }),
   generateUpskill: (data) => request("/upskill/generate", { method: "POST", body: JSON.stringify(data) }),
 
   // jira / tickets
