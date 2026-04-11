@@ -25,11 +25,10 @@ export default function Dashboard() {
   const [gaps, setGaps] = useState(null);
   const [certs, setCerts] = useState([]);
   const [matrixData, setMatrixData] = useState(null);
-  const [insights, setInsights] = useState([]);
 
   useEffect(() => {
-    Promise.all([api.members(), api.skills(), api.gaps(), api.certifications(), api.matrix(), api.insights()])
-      .then(([m, s, g, c, mx, ins]) => { setMembers(m); setSkills(s); setGaps(g); setCerts(c); setMatrixData(mx); setInsights(ins); })
+    Promise.all([api.members(), api.skills(), api.gaps(), api.certifications(), api.matrix()])
+      .then(([m, s, g, c, mx]) => { setMembers(m); setSkills(s); setGaps(g); setCerts(c); setMatrixData(mx); })
       .catch(() => {});
   }, []);
 
@@ -144,37 +143,6 @@ export default function Dashboard() {
       </div>
 
       <JiraWidget />
-
-      {/* AI Insights */}
-      {insights.length > 0 && (
-        <div className="dash-insights">
-          <div className="dash-insights-header">
-            <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16 }}>AI Insights</span>
-            </h3>
-            <span style={{ fontSize: 11, color: "var(--ink-mute)" }}>{insights.length} suggestions</span>
-          </div>
-          <div className="dash-insights-grid">
-            {insights.map((ins, i) => (
-              <div key={i} className={`dash-insight-card ${ins.priority}`}>
-                <div className="dash-insight-top">
-                  <span className={`pill ${ins.priority === "critical" ? "bad" : ins.priority === "high" ? "warn" : ""}`} style={{ fontSize: 9 }}>
-                    {ins.type === "upskill" ? "Upskill" : ins.type === "gap" ? "Gap" : ins.type === "cert" ? "Cert" : "Risk"}
-                  </span>
-                </div>
-                <div className="dash-insight-title">{ins.title}</div>
-                <div className="dash-insight-desc">{ins.description}</div>
-                <Link
-                  to={`/app/chat?context=${encodeURIComponent(ins.action)}`}
-                  className="dash-insight-cta"
-                >
-                  Take action
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Main content: risk skills + radar */}
       {skills.length > 0 && (

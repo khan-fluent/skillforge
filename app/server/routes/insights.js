@@ -4,117 +4,136 @@ import requireAuth from "../middleware/auth.js";
 
 const router = Router();
 
-/**
- * GET /api/insights
- *
- * Deterministic insights engine — no LLM call. Computes actionable
- * suggestions from gaps, proficiency matrix, and certification data.
- * Returns up to 6 ranked insights.
- */
 router.get("/", requireAuth, async (req, res, next) => {
   try {
     const teamId = req.user.team_id;
     const insights = [];
+    const seenSkills = new Set();
+    const seenPeople = new Set();
 
-    // 1. Gap closers — people close to level 4 on critical/at-risk skills
-    const { rows: gapCandidates } = await query(
+    // 1. Critical gaps — skills where bus factor = 0, with upskill candidates
+    const { rows: criticals } = await query(
       `SELECT s.id AS skill_id, s.name AS skill_name, s.domain,
-              u.id AS user_id, u.name AS user_name,
-              pr.level,
-              COUNT(*) FILTER (WHERE pr2.level >= 4) OVER (PARTITION BY s.id)::int AS bus_factor
+              ARRAY_AGG(u.name ORDER BY pr.level DESC) AS candidates,
+              ARRAY_AGG(pr.level ORDER BY pr.level DESC) AS levels
        FROM skills s
        JOIN proficiencies pr ON pr.skill_id = s.id
        JOIN users u ON u.id = pr.user_id AND u.team_id = s.team_id
-       LEFT JOIN proficiencies pr2 ON pr2.skill_id = s.id
-       WHERE s.team_id = $1 AND pr.level BETWEEN 2 AND 3
-       ORDER BY pr.level DESC, s.name`,
-      [teamId]
-    );
-
-    for (const c of gapCandidates) {
-      if (c.bus_factor <= 1 && insights.length < 8) {
-        const levelsToGo = 4 - c.level;
-        insights.push({
-          type: "upskill",
-          priority: c.bus_factor === 0 ? "critical" : "high",
-          title: `${c.user_name} should level up ${c.skill_name}`,
-          description: `Currently at level ${c.level}/5 — ${levelsToGo === 1 ? "one level" : `${levelsToGo} levels`} away from proficient. This would increase bus factor from ${c.bus_factor} to ${c.bus_factor + 1}.`,
-          action: `Create an upskilling plan for ${c.user_name} to improve their ${c.skill_name} proficiency from level ${c.level} to level 4+. Include specific learning resources, practice exercises, and a timeline.`,
-          skill_id: c.skill_id,
-          user_id: c.user_id,
-        });
-      }
-    }
-
-    // 2. Unowned critical skills — nobody has any proficiency at all
-    const { rows: unowned } = await query(
-      `SELECT s.id, s.name, s.domain
-       FROM skills s
-       LEFT JOIN proficiencies pr ON pr.skill_id = s.id
        WHERE s.team_id = $1
-       GROUP BY s.id
-       HAVING COUNT(pr.id) = 0`,
+         AND NOT EXISTS (
+           SELECT 1 FROM proficiencies p2
+           WHERE p2.skill_id = s.id AND p2.level >= 4
+         )
+       GROUP BY s.id`,
       [teamId]
     );
 
-    for (const s of unowned) {
+    for (const c of criticals) {
+      const best = c.candidates[0];
+      const bestLevel = c.levels[0];
+      seenSkills.add(c.skill_id);
       insights.push({
         type: "gap",
         priority: "critical",
-        title: `${s.name} has no team coverage`,
-        description: `Nobody on the team has rated themselves on this skill. Consider assigning it or removing it if no longer relevant.`,
-        action: `Analyze the skill "${s.name}" (${s.domain}) for our team. Who should learn it? What's the fastest path to coverage? Suggest a plan.`,
-        skill_id: s.id,
+        title: `No expert in ${c.skill_name}`,
+        description: `Bus factor 0. ${best} is closest at level ${bestLevel}/5 — ${4 - bestLevel === 1 ? "one level" : `${4 - bestLevel} levels`} from proficient.`,
+        action: `Create an upskilling plan to close the ${c.skill_name} gap. ${best} is at level ${bestLevel} — what's the fastest path to level 4+? Include resources and timeline.`,
       });
     }
 
-    // 3. Expiring certifications
+    // 2. Best upskill candidates — people at level 3 on at-risk skills (bus factor 1), spread across people
+    const { rows: upskillCandidates } = await query(
+      `SELECT s.id AS skill_id, s.name AS skill_name, s.domain,
+              u.id AS user_id, u.name AS user_name, pr.level,
+              (SELECT ARRAY_AGG(u2.name) FROM proficiencies p2 JOIN users u2 ON u2.id = p2.user_id WHERE p2.skill_id = s.id AND p2.level >= 4) AS current_experts
+       FROM skills s
+       JOIN proficiencies pr ON pr.skill_id = s.id AND pr.level = 3
+       JOIN users u ON u.id = pr.user_id AND u.team_id = s.team_id
+       WHERE s.team_id = $1
+         AND (SELECT COUNT(*) FROM proficiencies p2 WHERE p2.skill_id = s.id AND p2.level >= 4) = 1
+       ORDER BY s.name`,
+      [teamId]
+    );
+
+    for (const c of upskillCandidates) {
+      if (seenSkills.has(c.skill_id) || seenPeople.has(c.user_id)) continue;
+      seenSkills.add(c.skill_id);
+      seenPeople.add(c.user_id);
+      const expert = c.current_experts?.[0] || "one person";
+      insights.push({
+        type: "upskill",
+        priority: "high",
+        title: `${c.user_name} → ${c.skill_name} (level 3→4)`,
+        description: `One level from proficient. Currently only ${expert} is the expert — adding ${c.user_name} would double coverage.`,
+        action: `Create an upskilling plan for ${c.user_name} to reach level 4+ in ${c.skill_name}. They're at level 3. Include specific learning resources and a timeline.`,
+      });
+    }
+
+    // 3. Domain gaps — domains with bus factor 0
+    const { rows: domainGaps } = await query(
+      `SELECT d.name AS domain_name, d.category,
+              COUNT(dp.id)::int AS total_known,
+              COUNT(*) FILTER (WHERE dp.level >= 4)::int AS bus_factor
+       FROM domains d
+       LEFT JOIN domain_proficiencies dp ON dp.domain_id = d.id
+       WHERE d.team_id = $1
+       GROUP BY d.id
+       HAVING COUNT(*) FILTER (WHERE dp.level >= 4) = 0 AND COUNT(dp.id) > 0`,
+      [teamId]
+    );
+
+    for (const d of domainGaps.slice(0, 2)) {
+      insights.push({
+        type: "domain",
+        priority: "high",
+        title: `No expert in ${d.domain_name} domain`,
+        description: `${d.total_known} ${d.total_known === 1 ? "person knows" : "people know"} this domain but nobody is at level 4+.`,
+        action: `Analyze the "${d.domain_name}" business domain for our team. Who is closest to expert-level? What would it take to get them there?`,
+      });
+    }
+
+    // 4. Expiring certifications
     const { rows: expiringCerts } = await query(
       `SELECT c.name AS cert_name, u.name AS user_name, c.expires_on,
               CASE WHEN c.expires_on < CURRENT_DATE THEN 'expired' ELSE 'expiring' END AS urgency
        FROM certifications c
        JOIN users u ON u.id = c.user_id AND u.team_id = $1
-       WHERE c.expires_on IS NOT NULL
-         AND c.expires_on < CURRENT_DATE + INTERVAL '90 days'
-       ORDER BY c.expires_on`,
+       WHERE c.expires_on IS NOT NULL AND c.expires_on < CURRENT_DATE + INTERVAL '90 days'
+       ORDER BY c.expires_on LIMIT 2`,
       [teamId]
     );
 
-    for (const c of expiringCerts.slice(0, 2)) {
+    for (const c of expiringCerts) {
       insights.push({
         type: "cert",
         priority: c.urgency === "expired" ? "critical" : "medium",
-        title: `${c.user_name}'s ${c.cert_name} is ${c.urgency === "expired" ? "expired" : "expiring soon"}`,
-        description: `${c.urgency === "expired" ? "Expired" : `Expires ${c.expires_on}`}. Schedule a renewal.`,
-        action: `Help ${c.user_name} plan their ${c.cert_name} certification renewal. Include study resources, exam prep timeline, and booking steps.`,
+        title: `${c.user_name}'s ${c.cert_name} ${c.urgency === "expired" ? "has expired" : "expires soon"}`,
+        description: c.urgency === "expired" ? "Expired. Schedule renewal." : `Expires ${c.expires_on}.`,
+        action: `Help ${c.user_name} plan their ${c.cert_name} certification renewal. Include study resources and timeline.`,
       });
     }
 
-    // 4. Single points of failure — skills where one person carries all the weight
-    const { rows: spofs } = await query(
-      `SELECT s.name AS skill_name, u.name AS owner_name,
-              COUNT(*) FILTER (WHERE pr.level >= 4)::int AS bus_factor,
-              COUNT(pr.id)::int AS total_known
+    // 5. Team-level: weakest domain across team
+    const { rows: weakDomains } = await query(
+      `SELECT s.domain, ROUND(AVG(pr.level)::numeric, 1) AS avg_level,
+              COUNT(DISTINCT s.id)::int AS skill_count
        FROM skills s
        JOIN proficiencies pr ON pr.skill_id = s.id
-       JOIN users u ON u.id = pr.user_id AND pr.level >= 4
        WHERE s.team_id = $1
-       GROUP BY s.id, u.id, u.name, s.name
-       HAVING COUNT(*) FILTER (WHERE pr.level >= 4) = 1`,
+       GROUP BY s.domain
+       HAVING AVG(pr.level) < 3.5
+       ORDER BY AVG(pr.level) ASC LIMIT 1`,
       [teamId]
     );
 
-    // Only add a couple to avoid flooding
-    for (const s of spofs.slice(0, 2)) {
-      if (!insights.find((i) => i.title.includes(s.skill_name))) {
-        insights.push({
-          type: "risk",
-          priority: "medium",
-          title: `${s.skill_name} depends entirely on ${s.owner_name}`,
-          description: `If ${s.owner_name} is unavailable, the team loses this capability. Consider cross-training.`,
-          action: `Create a cross-training plan for ${s.skill_name}. ${s.owner_name} is the only expert — identify who else on the team should learn it and how.`,
-        });
-      }
+    for (const d of weakDomains) {
+      insights.push({
+        type: "team",
+        priority: "medium",
+        title: `Team is weakest in ${d.domain}`,
+        description: `Average proficiency is ${d.avg_level}/5 across ${d.skill_count} ${d.skill_count === 1 ? "skill" : "skills"}. Consider focused training.`,
+        action: `Our team's weakest area is "${d.domain}" with an average of ${d.avg_level}/5. Suggest a team training plan to improve across all ${d.domain} skills.`,
+      });
     }
 
     // Sort by priority, cap at 6
