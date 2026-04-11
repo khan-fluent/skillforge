@@ -1151,6 +1151,18 @@ input, textarea, select { font-family: inherit; }
   font-weight: 500;
 }
 
+/* ─────────── Demo banner ─────────── */
+
+.demo-banner {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff; font-size: 12px; font-weight: 500;
+  position: sticky; top: 0; z-index: 100;
+}
+.demo-banner .btn { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+.demo-banner .btn:hover { background: rgba(255,255,255,0.3); }
+
 /* ─────────── Upskill ─────────── */
 
 .upskill-layout { display: grid; grid-template-columns: 260px 1fr; gap: 22px; min-height: 500px; }
