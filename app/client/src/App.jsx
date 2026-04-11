@@ -19,7 +19,6 @@ import KnowledgeBase from "./pages/KnowledgeBase.jsx";
 import Domains from "./pages/Domains.jsx";
 import Upskill from "./pages/Upskill.jsx";
 import Settings from "./pages/Settings.jsx";
-import DemoShell, { DemoOverview, DemoSkills, DemoGaps, DemoLocked } from "./components/DemoShell.jsx";
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -58,15 +57,6 @@ export default function App() {
         <Route path="chat" element={<Chat />} />
         <Route path="kb" element={<KnowledgeBase />} />
         <Route path="settings" element={<Settings />} />
-      </Route>
-
-      {/* Sandbox / Try */}
-      <Route path="/try" element={<DemoShell />}>
-        <Route index element={<DemoOverview />} />
-        <Route path="skills" element={<DemoSkills />} />
-        <Route path="gaps" element={<DemoGaps />} />
-        <Route path="matrix" element={<DemoLocked title="Matrix" />} />
-        <Route path="chat" element={<DemoLocked title="AI Assistant" />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

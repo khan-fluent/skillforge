@@ -29,8 +29,8 @@ export default function Landing() {
           guesswork.
         </motion.p>
         <motion.div {...fade} transition={{ duration: 0.6, delay: 0.25 }} className="cta-row">
-          <Link to="/try" className="btn">Try it now — no signup</Link>
-          <Link to="/signup" className="btn ghost">Create an account</Link>
+          <Link to="/signup" className="btn">Start your team — free</Link>
+          <Link to="/login" className="btn ghost">I already have an account</Link>
         </motion.div>
       </section>
 
