@@ -11,6 +11,16 @@ router.get("/", requireAuth, async (req, res, next) => {
     const seenSkills = new Set();
     const seenPeople = new Set();
 
+    // Load existing upskill plans to filter out acted-on suggestions
+    const { rows: existingPlans } = await query(
+      "SELECT skill_id, user_id FROM upskill_plans WHERE team_id = $1 AND status IN ('active', 'completed')",
+      [teamId]
+    );
+    const hasUpskillPlan = (skillId, userId) =>
+      existingPlans.some((p) => p.skill_id === skillId && p.user_id === userId);
+    const hasSkillPlan = (skillId) =>
+      existingPlans.some((p) => p.skill_id === skillId);
+
     // 1. Critical gaps — skills where bus factor = 0, with upskill candidates
     const { rows: criticals } = await query(
       `SELECT s.id AS skill_id, s.name AS skill_name, s.domain,
@@ -30,6 +40,7 @@ router.get("/", requireAuth, async (req, res, next) => {
     );
 
     for (const c of criticals) {
+      if (hasSkillPlan(c.skill_id)) continue;
       const best = c.candidates[0];
       const bestLevel = c.levels[0];
       seenSkills.add(c.skill_id);
@@ -62,7 +73,7 @@ router.get("/", requireAuth, async (req, res, next) => {
     );
 
     for (const c of upskillCandidates) {
-      if (seenSkills.has(c.skill_id) || seenPeople.has(c.user_id)) continue;
+      if (seenSkills.has(c.skill_id) || seenPeople.has(c.user_id) || hasUpskillPlan(c.skill_id, c.user_id)) continue;
       seenSkills.add(c.skill_id);
       seenPeople.add(c.user_id);
       const expert = c.current_experts?.[0] || "one person";
