@@ -15,6 +15,7 @@ router.get("/", requireAuth, async (req, res, next) => {
     const { rows: criticals } = await query(
       `SELECT s.id AS skill_id, s.name AS skill_name, s.domain,
               ARRAY_AGG(u.name ORDER BY pr.level DESC) AS candidates,
+              ARRAY_AGG(u.id ORDER BY pr.level DESC) AS candidate_ids,
               ARRAY_AGG(pr.level ORDER BY pr.level DESC) AS levels
        FROM skills s
        JOIN proficiencies pr ON pr.skill_id = s.id
@@ -36,8 +37,13 @@ router.get("/", requireAuth, async (req, res, next) => {
         type: "gap",
         priority: "critical",
         title: `No expert in ${c.skill_name}`,
-        description: `Bus factor 0. ${best} is closest at level ${bestLevel}/5 — ${4 - bestLevel === 1 ? "one level" : `${4 - bestLevel} levels`} from proficient.`,
-        action: `Create an upskilling plan to close the ${c.skill_name} gap. ${best} is at level ${bestLevel} — what's the fastest path to level 4+? Include resources and timeline.`,
+        description: `Bus factor 0. ${best} is closest at level ${bestLevel}/5 \u2014 ${4 - bestLevel === 1 ? "one level" : `${4 - bestLevel} levels`} from proficient.`,
+        action: `Create an upskilling plan to close the ${c.skill_name} gap. ${best} is at level ${bestLevel} \u2014 what's the fastest path to level 4+? Include resources and timeline.`,
+        skill_id: c.skill_id,
+        user_id: c.candidate_ids[0],
+        user_name: best,
+        skill_name: c.skill_name,
+        current_level: bestLevel,
       });
     }
 
@@ -63,9 +69,14 @@ router.get("/", requireAuth, async (req, res, next) => {
       insights.push({
         type: "upskill",
         priority: "high",
-        title: `${c.user_name} → ${c.skill_name} (level 3→4)`,
-        description: `One level from proficient. Currently only ${expert} is the expert — adding ${c.user_name} would double coverage.`,
+        title: `${c.user_name} \u2192 ${c.skill_name} (level 3\u21924)`,
+        description: `One level from proficient. Currently only ${expert} is the expert \u2014 adding ${c.user_name} would double coverage.`,
         action: `Create an upskilling plan for ${c.user_name} to reach level 4+ in ${c.skill_name}. They're at level 3. Include specific learning resources and a timeline.`,
+        skill_id: c.skill_id,
+        user_id: c.user_id,
+        user_name: c.user_name,
+        skill_name: c.skill_name,
+        current_level: c.level,
       });
     }
 

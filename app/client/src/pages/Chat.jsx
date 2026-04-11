@@ -171,10 +171,17 @@ export default function Chat() {
                 ) : m.content}
               </div>
             ))}
-            {loading && <div className="msg assistant"><span className="loader"><span /><span /><span /></span></div>}
+            {loading && (
+              <div className="msg assistant chat-thinking">
+                <div className="chat-thinking-content">
+                  <span className="loader"><span /><span /><span /></span>
+                  <span>Analyzing your team data and generating response...</span>
+                </div>
+              </div>
+            )}
           </div>
           <form className="chat-input" onSubmit={(e) => { e.preventDefault(); send(); }}>
-            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about your team's skills, gaps, or staffing..." disabled={loading} />
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={loading ? "Thinking..." : "Ask about your team's skills, gaps, or staffing..."} disabled={loading} />
             <button type="submit" className="btn" disabled={loading || !input.trim()}>Send</button>
           </form>
         </div>

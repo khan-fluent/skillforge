@@ -91,6 +91,15 @@ export const api = {
   // insights
   insights:        () => request("/insights"),
 
+  // upskill
+  upskillPlans:    () => request("/upskill"),
+  upskillPlan:     (id) => request(`/upskill/${id}`),
+  createUpskill:   (data) => request("/upskill", { method: "POST", body: JSON.stringify(data) }),
+  updateUpskill:   (id, data) => request(`/upskill/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteUpskill:   (id) => request(`/upskill/${id}`, { method: "DELETE" }),
+  toggleStep:      (id, completed) => request(`/upskill/steps/${id}`, { method: "PUT", body: JSON.stringify({ completed }) }),
+  generateUpskill: (data) => request("/upskill/generate", { method: "POST", body: JSON.stringify(data) }),
+
   // jira / tickets
   jiraSummary:    () => request("/jira/summary"),
   jiraConnection: () => request("/jira/connection"),

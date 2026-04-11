@@ -100,6 +100,35 @@ ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS description  TEXT;
 ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_key  VARCHAR(50);
 ALTER TABLE jira_issues ADD COLUMN IF NOT EXISTS project_name VARCHAR(200);
 
+-- Upskill plans
+CREATE TABLE IF NOT EXISTS upskill_plans (
+  id          SERIAL PRIMARY KEY,
+  team_id     INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  skill_id    INTEGER REFERENCES skills(id) ON DELETE SET NULL,
+  title       VARCHAR(300) NOT NULL,
+  summary     TEXT,
+  status      VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active','completed','archived')),
+  created_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS upskill_steps (
+  id          SERIAL PRIMARY KEY,
+  plan_id     INTEGER NOT NULL REFERENCES upskill_plans(id) ON DELETE CASCADE,
+  sort_order  SMALLINT NOT NULL DEFAULT 0,
+  title       VARCHAR(500) NOT NULL,
+  description TEXT,
+  completed   BOOLEAN DEFAULT FALSE,
+  completed_at TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_upskill_plans_team ON upskill_plans(team_id);
+CREATE INDEX IF NOT EXISTS idx_upskill_plans_user ON upskill_plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_upskill_steps_plan ON upskill_steps(plan_id);
+
 -- Chat session history
 CREATE TABLE IF NOT EXISTS chat_sessions (
   id          SERIAL PRIMARY KEY,

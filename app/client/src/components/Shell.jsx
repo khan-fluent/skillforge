@@ -20,6 +20,7 @@ const NAV = [
       { to: "/app/certifications", label: "Certifications" },
     ],
   },
+  { to: "/app/upskill", label: "Upskill", icon: "↑" },
   { to: "/app/kb", label: "Knowledge base", icon: "☰" },
   { to: "/app/chat", label: "AI assistant", icon: "✧" },
   { to: "/app/settings", label: "Settings", icon: "⚙" },

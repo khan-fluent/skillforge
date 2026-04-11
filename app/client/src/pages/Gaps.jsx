@@ -148,9 +148,24 @@ export default function Gaps() {
                   <span className="gaps-insight-title">{ins.title}</span>
                 </div>
                 <span className="gaps-insight-desc">{ins.description}</span>
-                <Link to={`/app/chat?context=${encodeURIComponent(ins.action)}`} className="gaps-insight-cta">
-                  Take action
-                </Link>
+                {(ins.type === "upskill" || ins.type === "gap") && ins.skill_name ? (
+                  <Link
+                    to={`/app/upskill?generate=${encodeURIComponent(JSON.stringify({
+                      user_name: ins.user_name || "the team",
+                      skill_name: ins.skill_name,
+                      current_level: ins.current_level || 0,
+                      skill_id: ins.skill_id,
+                      user_id: ins.user_id,
+                    }))}`}
+                    className="gaps-insight-cta"
+                  >
+                    Create plan
+                  </Link>
+                ) : (
+                  <Link to={`/app/chat?context=${encodeURIComponent(ins.action)}`} className="gaps-insight-cta">
+                    Take action
+                  </Link>
+                )}
               </div>
             ))}
           </div>

@@ -24,6 +24,7 @@ import jiraRouter from "./routes/jira.js";
 import kbRouter from "./routes/kb.js";
 import domainsRouter from "./routes/domains.js";
 import insightsRouter from "./routes/insights.js";
+import upskillRouter from "./routes/upskill.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/jira", jiraRouter);
 app.use("/api/kb", kbRouter);
 app.use("/api/domains", domainsRouter);
 app.use("/api/insights", insightsRouter);
+app.use("/api/upskill", upskillRouter);
 
 if (process.env.NODE_ENV === "production") {
   const clientDist = join(__dirname, "public");
