@@ -3,6 +3,7 @@ import { query } from "../db/index.js";
 import { getLLM } from "../services/llm/index.js";
 import { buildSnapshot } from "../services/snapshot.js";
 import requireAuth from "../middleware/auth.js";
+import { aiLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 
@@ -201,7 +202,7 @@ router.delete("/steps/:id", requireAuth, async (req, res, next) => {
 
 // ─── AI Generation ──────────────────────────────────────────────────────────
 
-router.post("/generate", requireAuth, async (req, res, next) => {
+router.post("/generate", aiLimiter, requireAuth, async (req, res, next) => {
   try {
     const { user_name, skill_name, current_level, skill_id, user_id } = req.body;
     if (!user_name || !skill_name) return res.status(400).json({ error: "user_name and skill_name required" });

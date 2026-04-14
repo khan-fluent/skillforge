@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getLLM } from "../services/llm/index.js";
 import { query } from "../db/index.js";
 import requireAuth, { requireAdmin } from "../middleware/auth.js";
+import { aiLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 
@@ -65,7 +66,7 @@ router.post("/bulk", requireAuth, requireAdmin, async (req, res, next) => {
 
 // AI-powered skill generation. Takes a free-text description of the team's
 // stack and returns structured skill suggestions with domains.
-router.post("/generate", requireAuth, requireAdmin, async (req, res, next) => {
+router.post("/generate", aiLimiter, requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { description } = req.body;
     if (!description || description.trim().length < 10) {

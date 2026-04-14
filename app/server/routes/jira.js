@@ -2,12 +2,20 @@ import { Router } from "express";
 import { query } from "../db/index.js";
 import requireAuth, { requireAdmin } from "../middleware/auth.js";
 import { searchIssues, snapshotIssues, generateMockIssues, defaultJql } from "../services/jira.js";
+import { encrypt, decrypt } from "../services/crypto.js";
 
 const router = Router();
 
 async function getConnection(teamId) {
   const { rows } = await query("SELECT * FROM jira_connections WHERE team_id = $1", [teamId]);
-  return rows[0] || null;
+  if (!rows[0]) return null;
+  // Decrypt the stored token so downstream callers (Jira API) get the real value
+  try {
+    rows[0].api_token = decrypt(rows[0].api_token);
+  } catch {
+    // Token may be stored as plaintext from before encryption was added — use as-is
+  }
+  return rows[0];
 }
 
 // ─────────────── Connection ───────────────
@@ -25,6 +33,7 @@ router.post("/connection", requireAuth, requireAdmin, async (req, res, next) => 
     if (!base_url || !email || !api_token) {
       return res.status(400).json({ error: "base_url, email, api_token required" });
     }
+    const encryptedToken = encrypt(api_token);
     const { rows } = await query(
       `INSERT INTO jira_connections (team_id, base_url, email, api_token, is_mock)
        VALUES ($1, $2, $3, $4, false)
@@ -34,7 +43,7 @@ router.post("/connection", requireAuth, requireAdmin, async (req, res, next) => 
          api_token = EXCLUDED.api_token,
          is_mock = false
        RETURNING id, team_id, base_url, email, is_mock, last_sync_at`,
-      [req.user.team_id, base_url, email, api_token]
+      [req.user.team_id, base_url, email, encryptedToken]
     );
 
     // First-run convenience: if the team has no saved filters, seed a sensible

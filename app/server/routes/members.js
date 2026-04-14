@@ -61,9 +61,9 @@ router.post("/", requireAuth, requireAdmin, async (req, res, next) => {
 
     const token = newInviteToken();
     const { rows } = await query(
-      `INSERT INTO users (team_id, name, email, role, job_title, invite_token, invited_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       RETURNING id, name, email, role, job_title, invite_token, invited_at`,
+      `INSERT INTO users (team_id, name, email, role, job_title, invite_token, invited_at, invite_expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW() + INTERVAL '72 hours')
+       RETURNING id, name, email, role, job_title, invite_token, invited_at, invite_expires_at`,
       [req.user.team_id, name, email.toLowerCase(), finalRole, job_title || null, token]
     );
     res.status(201).json(rows[0]);
@@ -111,9 +111,10 @@ router.post("/:id/reinvite", requireAuth, requireAdmin, async (req, res, next) =
     const token = newInviteToken();
     const { rows } = await query(
       `UPDATE users
-         SET invite_token = $1, invited_at = NOW(), accepted_at = NULL, password_hash = NULL
+         SET invite_token = $1, invited_at = NOW(), invite_expires_at = NOW() + INTERVAL '72 hours',
+             accepted_at = NULL, password_hash = NULL
        WHERE id = $2 AND team_id = $3
-       RETURNING id, name, email, invite_token`,
+       RETURNING id, name, email, invite_token, invite_expires_at`,
       [token, req.params.id, req.user.team_id]
     );
     if (!rows.length) return res.status(404).json({ error: "not found" });

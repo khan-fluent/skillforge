@@ -94,6 +94,9 @@ router.post("/accept", async (req, res) => {
   try {
     const { rows } = await query("SELECT * FROM users WHERE invite_token = $1", [token]);
     if (!rows.length) return res.status(404).json({ error: "Invalid or already-used invite" });
+    if (rows[0].invite_expires_at && new Date(rows[0].invite_expires_at) < new Date()) {
+      return res.status(410).json({ error: "Invite has expired. Ask your admin to re-send the invite." });
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const updated = await query(
@@ -120,6 +123,9 @@ router.get("/invite/:token", async (req, res) => {
       [req.params.token]
     );
     if (!rows.length) return res.status(404).json({ error: "Invite not found" });
+    if (rows[0].invite_expires_at && new Date(rows[0].invite_expires_at) < new Date()) {
+      return res.status(410).json({ error: "Invite has expired. Ask your admin to re-send the invite." });
+    }
     res.json(rows[0]);
   } catch {
     res.status(500).json({ error: "Lookup failed" });

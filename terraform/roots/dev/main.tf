@@ -81,6 +81,18 @@ resource "aws_ssm_parameter" "jwt_secret" {
   value = var.jwt_secret
 }
 
+resource "aws_ssm_parameter" "encryption_key" {
+  name  = "/${local.name}/encryption-key"
+  type  = "SecureString"
+  value = var.encryption_key
+}
+
+resource "aws_ssm_parameter" "cors_allowed_origins" {
+  name  = "/${local.name}/cors-allowed-origins"
+  type  = "String"
+  value = var.cors_allowed_origins
+}
+
 ################################################################################
 # ECR
 ################################################################################
@@ -133,6 +145,14 @@ module "ecs_service" {
       name      = "JWT_SECRET"
       valueFrom = aws_ssm_parameter.jwt_secret.arn
     },
+    {
+      name      = "ENCRYPTION_KEY"
+      valueFrom = aws_ssm_parameter.encryption_key.arn
+    },
+    {
+      name      = "CORS_ALLOWED_ORIGINS"
+      valueFrom = aws_ssm_parameter.cors_allowed_origins.arn
+    },
   ]
 
   execution_role_secretsmanager_arns = [
@@ -143,5 +163,7 @@ module "ecs_service" {
     aws_ssm_parameter.llm_provider.arn,
     aws_ssm_parameter.anthropic_api_key.arn,
     aws_ssm_parameter.jwt_secret.arn,
+    aws_ssm_parameter.encryption_key.arn,
+    aws_ssm_parameter.cors_allowed_origins.arn,
   ]
 }

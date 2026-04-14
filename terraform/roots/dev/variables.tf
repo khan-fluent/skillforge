@@ -82,3 +82,15 @@ variable "jwt_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "encryption_key" {
+  description = "AES-256 key for encrypting secrets at rest (64-char hex). Generate with: openssl rand -hex 32"
+  type        = string
+  sensitive   = true
+}
+
+variable "cors_allowed_origins" {
+  description = "Comma-separated allowed CORS origins"
+  type        = string
+  default     = "https://skillforge.khanfluent.digital"
+}

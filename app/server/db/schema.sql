@@ -215,6 +215,12 @@ CREATE INDEX IF NOT EXISTS idx_domains_team              ON domains(team_id);
 CREATE INDEX IF NOT EXISTS idx_domain_proficiencies_user ON domain_proficiencies(user_id);
 CREATE INDEX IF NOT EXISTS idx_domain_proficiencies_dom  ON domain_proficiencies(domain_id);
 
+-- Invite token expiry (72 hours from invited_at)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_expires_at TIMESTAMPTZ;
+
+-- Widen api_token to accommodate encrypted (base64-encoded) values
+ALTER TABLE jira_connections ALTER COLUMN api_token TYPE VARCHAR(1024);
+
 CREATE INDEX IF NOT EXISTS idx_users_team           ON users(team_id);
 CREATE INDEX IF NOT EXISTS idx_users_invite_token   ON users(invite_token) WHERE invite_token IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_skills_team          ON skills(team_id);
