@@ -29,9 +29,7 @@ async function ensureDatabaseExists() {
     database: "postgres",
     user: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
-    ssl: process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" }
-      : false,
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
   });
   try {
     const exists = await adminPool.query("SELECT 1 FROM pg_database WHERE datname = $1", [dbName]);
