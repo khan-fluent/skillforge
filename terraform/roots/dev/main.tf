@@ -98,7 +98,7 @@ resource "aws_ssm_parameter" "cors_allowed_origins" {
 ################################################################################
 
 module "ecr" {
-  source = "${var.terraform_modules_source}//modules/ecr?ref=v1"
+  source = "git::https://github.com/khan-fluent/terraform-modules.git//modules/ecr?ref=v1"
 
   name                  = local.name
   lifecycle_description = "Keep only the 3 most recent images"
@@ -109,7 +109,7 @@ module "ecr" {
 ################################################################################
 
 module "ecs_service" {
-  source = "${var.terraform_modules_source}//modules/ecs-service-ec2?ref=v1"
+  source = "git::https://github.com/khan-fluent/terraform-modules.git//modules/ecs-service-ec2?ref=v1"
 
   service_name       = local.name
   cluster_id         = data.aws_ssm_parameter.ecs_cluster_arn.value
