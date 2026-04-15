@@ -87,6 +87,7 @@ variable "encryption_key" {
   description = "AES-256 key for encrypting secrets at rest (64-char hex). Generate with: openssl rand -hex 32"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "cors_allowed_origins" {
